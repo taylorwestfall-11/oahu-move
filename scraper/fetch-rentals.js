@@ -116,13 +116,28 @@ async function fetchAllRentCastListings() {
   return all;
 }
 
+// RentCast has no listing URL/agent/MLS contact for Oahu (verified null
+// across a live sample), so there's nothing to deep-link to. This builds
+// Zillow's address-search URL instead — a plain outbound search link a
+// human opens themselves (not automated fetching/scraping), confirmed
+// working in a real browser: zillow.com/homes/<address-with-dashes>_rb/
+// resolves straight to that property's page when Zillow has it listed.
+function zillowSearchUrl(address) {
+  var slug = String(address || '').replace(/,/g, '').trim().replace(/\s+/g, '-');
+  if (!slug) return '';
+  return 'https://www.zillow.com/homes/' + encodeURIComponent(slug) + '_rb/';
+}
+
 function normalizeRentCastListing(l) {
+  const address = l.formattedAddress || [l.addressLine1, l.city, l.state, l.zipCode].filter(Boolean).join(', ');
   return {
     externalId: 'rentcast:' + l.id,
     source: 'RentCast',
-    address: l.formattedAddress || [l.addressLine1, l.city, l.state, l.zipCode].filter(Boolean).join(', '),
+    address,
     addressLine2: l.addressLine2 || '',
-    url: '', // RentCast doesn't return a public listing URL or photos
+    url: zillowSearchUrl(address),
+    // No photo from RentCast either — the app itself falls back to a Google
+    // Street View image built from the address, so this stays blank here.
     photoUrl: '',
     price: l.price || '',
     sqft: l.squareFootage || '',

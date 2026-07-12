@@ -4,6 +4,14 @@
 // ⚠️ SET THIS to your Apps Script Web App URL after deploying (ends in /exec).
 var API_BASE = 'https://script.google.com/macros/s/AKfycbyEAKsrROuR3KAeiCcD5z3sWlB7wrm89UTS_F05wtsdUAj_r3JgzIwDph-tKbrwTBLQ/exec';
 
+// ⚠️ SET THIS to a Google Maps Platform API key with the Street View Static
+// API enabled, restricted (in the Google Cloud Console) to HTTP referrer
+// https://taylorwestfall-11.github.io/* — used to show a real street-level
+// photo of a rental's address when the listing itself has no photo (e.g.
+// RentCast imports, which have none). Leave blank to just show the house
+// icon instead. See SETUP.md.
+var MAPS_API_KEY = 'PASTE_YOUR_GOOGLE_MAPS_API_KEY_HERE';
+
 var DATA = { tasks: [], owners: [], statuses: [], priorities: [], categories: [] };
 var RENTAL_DATA = { listings: [], statuses: [] };
 var VIEW = 'cal';
@@ -266,19 +274,19 @@ function renderCalendarWeekGrid(list, ws) {
   var todayStr = iso(today0());
   var byDate = {};
   list.forEach(function (t) { if (t.due) (byDate[t.due] = byDate[t.due] || []).push(t); });
+  var DOWS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-  var html = '<div class="cal-grid cal-dow">' +
-    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function (d) { return '<div class="dow">' + d + '</div>'; }).join('') +
-    '</div>';
-
-  html += '<div class="cal-grid cal-grid-week">';
+  var html = '<div class="cal-week-list">';
   for (var i = 0; i < 7; i++) {
     var d = new Date(ws); d.setDate(d.getDate() + i);
     var ds = iso(d);
     var items = (byDate[ds] || []).slice().sort(byPriority);
     html += '<div class="cal-cell' + (ds === todayStr ? ' today' : '') + '" data-date="' + ds + '">' +
-      '<div class="cal-daynum">' + d.getDate() + '</div>' +
-      '<div class="cal-chips">' + items.map(function (t) { return calChip(t, 90); }).join('') + '</div></div>';
+      '<div class="cal-daynum"><span class="wk-dow">' + DOWS[d.getDay()] + '</span><span class="wk-num">' + d.getDate() + '</span></div>' +
+      (items.length
+        ? '<div class="cal-chips">' + items.map(function (t) { return calChip(t, 90); }).join('') + '</div>'
+        : '<div class="cal-chips cal-chips-empty">No tasks</div>') +
+      '</div>';
   }
   html += '</div>';
 
@@ -430,9 +438,21 @@ function fmtMoney(n) {
   n = Number(n);
   return isNaN(n) ? '' : '$' + n.toLocaleString('en-US');
 }
+// Street View Static API image for an address — used when a listing has no
+// photo of its own (true for every RentCast import). Google returns a plain
+// 200 OK gray "no imagery here" tile rather than an HTTP error when there's
+// no coverage at a spot, so the onerror fallback below won't catch that
+// case — a known, accepted cosmetic gap.
+function streetViewUrl(address) {
+  if (!MAPS_API_KEY || MAPS_API_KEY.indexOf('PASTE_YOUR') === 0 || !address) return '';
+  return 'https://maps.googleapis.com/maps/api/streetview?size=200x200&fov=80&location=' +
+    encodeURIComponent(address) + '&key=' + MAPS_API_KEY;
+}
+
 function rentalCardHtml(r) {
-  var photo = r.photoUrl
-    ? '<img class="rental-thumb" src="' + esc(r.photoUrl) + '" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'rental-thumb-fallback\',textContent:\'🏠\'}))">'
+  var photoSrc = r.photoUrl || streetViewUrl(r.address);
+  var photo = photoSrc
+    ? '<img class="rental-thumb" src="' + esc(photoSrc) + '" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'rental-thumb-fallback\',textContent:\'🏠\'}))">'
     : '<div class="rental-thumb-fallback">🏠</div>';
   var meta = [];
   if (r.beds) meta.push('<span class="chip-sm">' + esc(r.beds) + ' bd</span>');
