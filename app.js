@@ -155,12 +155,14 @@ function renderCalNav() {
     ? (function () { var we = new Date(LIST_WS); we.setDate(we.getDate() + 6); return fmtShort(LIST_WS) + ' – ' + fmtShort(we); })()
     : MONTHS[CAL.m] + ' ' + CAL.y;
   return '<div class="cal-nav">' +
-      '<button onclick="calPrev()" aria-label="Previous">‹</button>' +
-      '<div class="cal-title">' + title + '</div>' +
-      '<button onclick="calNext()" aria-label="Next">›</button>' +
+      '<div class="cal-nav-center">' +
+        '<button onclick="calPrev()" aria-label="Previous">‹</button>' +
+        '<div class="cal-title">' + title + '</div>' +
+        '<button onclick="calNext()" aria-label="Next">›</button>' +
+      '</div>' +
+      '<button class="cal-today-btn" onclick="calTodayNav()">Today</button>' +
     '</div>' +
     '<div class="cal-subnav">' +
-      '<button class="cal-today-btn" onclick="calTodayNav()">Today</button>' +
       '<div class="seg subseg">' +
         '<button class="' + (CAL_SUBVIEW === 'month' ? 'active' : '') + '" onclick="setCalSubview(\'month\')">Month</button>' +
         '<button class="' + (CAL_SUBVIEW === 'week' ? 'active' : '') + '" onclick="setCalSubview(\'week\')">Week</button>' +
