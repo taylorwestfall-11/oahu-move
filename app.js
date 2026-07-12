@@ -125,7 +125,7 @@ function render() {
   if (VIEW === 'cal') {
     // Calendar view always shows everything — no filters/search apply here.
     if (CAL_SUBVIEW === 'week') {
-      main.innerHTML = renderCalNav() + renderWeekCards(DATA.tasks, LIST_WS);
+      main.innerHTML = renderCalNav() + renderCalendarWeekGrid(DATA.tasks, LIST_WS);
     } else {
       main.innerHTML = renderCalendar(DATA.tasks);
     }
@@ -137,7 +137,7 @@ function render() {
 // ---- calendar view ----
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 function iso(d) { return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2); }
-function shorten(s) { s = String(s); return s.length > 40 ? s.slice(0, 38) + '…' : s; }
+function shorten(s, maxLen) { s = String(s); maxLen = maxLen || 40; return s.length > maxLen ? s.slice(0, maxLen - 2) + '…' : s; }
 function changeMonth(delta) {
   CAL.m += delta;
   if (CAL.m < 0) { CAL.m = 11; CAL.y--; }
@@ -168,11 +168,11 @@ function renderCalNav() {
     '</div>';
 }
 
-function calChip(t) {
+function calChip(t, maxLen) {
   var p = t.priority === 'Critical' ? 'crit' : t.priority === 'High' ? 'high' : t.priority === 'Low' ? 'low' : 'norm';
   var done = t.status === 'Done' ? ' chip-done' : '';
   return '<div class="cal-chip ' + p + done + '" data-id="' + t.id + '" data-date="' + (t.due || '') + '">' +
-    (t.milestone ? '★ ' : '') + esc(shorten(t.task)) + '</div>';
+    (t.milestone ? '★ ' : '') + esc(shorten(t.task, maxLen)) + '</div>';
 }
 
 function renderCalendar(list) {
@@ -210,6 +210,34 @@ function renderCalendar(list) {
   var undated = list.filter(function (t) { return !t.due; }).sort(byPriority);
   html += '<div class="cal-tray"><div class="tray-label">📥 Unscheduled — drag onto a day</div><div class="tray-chips">' +
     (undated.length ? undated.map(calChip).join('') : '<span class="tray-empty">Nothing unscheduled 🎉</span>') +
+    '</div></div>';
+  html += '<div class="cal-hint">Drag a task to reschedule · tap a day to add · tap a task to edit</div>';
+  return html;
+}
+
+function renderCalendarWeekGrid(list, ws) {
+  var todayStr = iso(today0());
+  var byDate = {};
+  list.forEach(function (t) { if (t.due) (byDate[t.due] = byDate[t.due] || []).push(t); });
+
+  var html = '<div class="cal-grid cal-dow">' +
+    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function (d) { return '<div class="dow">' + d + '</div>'; }).join('') +
+    '</div>';
+
+  html += '<div class="cal-grid cal-grid-week">';
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(ws); d.setDate(d.getDate() + i);
+    var ds = iso(d);
+    var items = (byDate[ds] || []).slice().sort(byPriority);
+    html += '<div class="cal-cell' + (ds === todayStr ? ' today' : '') + '" data-date="' + ds + '">' +
+      '<div class="cal-daynum">' + d.getDate() + '</div>' +
+      '<div class="cal-chips">' + items.map(function (t) { return calChip(t, 90); }).join('') + '</div></div>';
+  }
+  html += '</div>';
+
+  var undated = list.filter(function (t) { return !t.due; }).sort(byPriority);
+  html += '<div class="cal-tray"><div class="tray-label">📥 Unscheduled — drag onto a day</div><div class="tray-chips">' +
+    (undated.length ? undated.map(function (t) { return calChip(t); }).join('') : '<span class="tray-empty">Nothing unscheduled 🎉</span>') +
     '</div></div>';
   html += '<div class="cal-hint">Drag a task to reschedule · tap a day to add · tap a task to edit</div>';
   return html;
