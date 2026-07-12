@@ -201,6 +201,12 @@
   .wf-header small { color: var(--muted); font-weight: 600; font-size: 11.5px; }
   .wf-toggle { display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
   .wf-empty { text-align: center; color: var(--muted); padding: 18px; font-size: 13px; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); }
+
+  .cal-title .lw-now { color: var(--accent); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; margin-left: 4px; }
+  .list-section-label {
+    font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .3px; margin: 18px 2px 8px;
+  }
 </style>
 </head>
 <body>
@@ -228,14 +234,9 @@
   <div class="filter-controls" id="filterControls">
     <div class="filters">
       <select id="fCat" onchange="render()"><option value="">All categories</option></select>
-      <select id="fOwner" onchange="render()"><option value="">All owners</option></select>
-      <select id="fStatus" onchange="render()">
-        <option value="">Any status</option>
-        <option>Not Started</option><option>In Progress</option><option>Done</option>
-      </select>
     </div>
     <input class="search" id="search" placeholder="Search tasks…" oninput="render()">
-    <label class="toggle-done"><input type="checkbox" id="hideDone" onchange="render()"> Hide completed</label>
+    <label class="toggle-done"><input type="checkbox" id="showDone" onchange="render()"> Show completed</label>
   </div>
 </div>
 

@@ -10,6 +10,7 @@ var BUSY = false;
 var pollTimer = null;
 var CAL = { y: 2026, m: 6 }; // calendar month shown (set to today on boot)
 var WF_SHOW_DONE = false; // "This Week's Focus" — show completed tasks toggle
+var LIST_WS = null; // List view — start (Sunday) of the week currently shown (set to today's week on boot)
 
 // ---- server bridge (fetch-based JSON API) ----
 function apiGet(action) {
@@ -63,12 +64,8 @@ function poll() {
 
 function fillFilters() {
   var fCat = document.getElementById('fCat');
-  var fOwner = document.getElementById('fOwner');
   if (fCat.options.length <= 1) {
     DATA.categories.forEach(function (c) { fCat.add(new Option(c, c)); });
-  }
-  if (fOwner.options.length <= 1) {
-    DATA.owners.forEach(function (o) { fOwner.add(new Option(o, o)); });
   }
   // modal selects
   fillSelect('mCat', DATA.categories);
@@ -92,15 +89,11 @@ function daysBetween(a, b) { return Math.round((a - b) / 86400000); }
 // ---- filtering ----
 function filtered() {
   var cat = document.getElementById('fCat').value;
-  var own = document.getElementById('fOwner').value;
-  var st = document.getElementById('fStatus').value;
   var q = document.getElementById('search').value.toLowerCase();
-  var hideDone = document.getElementById('hideDone').checked;
+  var showDone = document.getElementById('showDone').checked;
   return DATA.tasks.filter(function (t) {
     if (cat && t.category !== cat) return false;
-    if (own && t.owner !== own) return false;
-    if (st && t.status !== st) return false;
-    if (hideDone && t.status === 'Done') return false;
+    if (!showDone && t.status === 'Done') return false;
     if (q && (t.task + ' ' + t.notes + ' ' + t.category).toLowerCase().indexOf(q) < 0) return false;
     return true;
   });
@@ -128,9 +121,7 @@ function render() {
     main.innerHTML = renderCalendar(DATA.tasks);
     return;
   }
-  var list = filtered();
-  if (!list.length) { main.innerHTML = '<div class="empty">No tasks match your filters.</div>'; return; }
-  main.innerHTML = renderList(list);
+  main.innerHTML = renderList(filtered());
 }
 
 // ---- calendar view ----
@@ -258,15 +249,41 @@ function cardHtml(t) {
 }
 function fmtDue(s) { var d = parseDue(s); return d ? d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}) : s; }
 
+function changeListWeek(delta) {
+  LIST_WS = new Date(LIST_WS);
+  LIST_WS.setDate(LIST_WS.getDate() + delta * 7);
+  render();
+}
+function listWeekToday() {
+  LIST_WS = weekStart(today0());
+  render();
+}
+
 function renderList(list) {
-  var order = { Critical: 0, High: 1, Normal: 2, Low: 3 };
-  var sorted = list.slice().sort(function (a, b) {
+  var we = new Date(LIST_WS); we.setDate(we.getDate() + 6);
+  var isCurrentWeek = weekStart(today0()).getTime() === LIST_WS.getTime();
+
+  var inWeek = list.filter(function (t) {
+    var d = parseDue(t.due);
+    return d && d >= LIST_WS && d <= we;
+  }).sort(function (a, b) {
     var da = parseDue(a.due), db = parseDue(b.due);
-    if (da && db && da - db !== 0) return da - db;
-    if (da && !db) return -1; if (!da && db) return 1;
-    return (order[a.priority] || 2) - (order[b.priority] || 2);
+    return (da - db) || byPriority(a, b);
   });
-  return sorted.map(cardHtml).join('');
+  var noDate = list.filter(function (t) { return !t.due; }).sort(byPriority);
+
+  var html = '<div class="cal-nav">' +
+    '<button onclick="changeListWeek(-1)" aria-label="Previous week">‹</button>' +
+    '<div class="cal-title">' + fmtShort(LIST_WS) + ' – ' + fmtShort(we) + (isCurrentWeek ? ' <small class="lw-now">This Week</small>' : '') + '</div>' +
+    '<button class="cal-today-btn" onclick="listWeekToday()">This Week</button>' +
+    '<button onclick="changeListWeek(1)" aria-label="Next week">›</button></div>';
+
+  html += inWeek.length ? inWeek.map(cardHtml).join('') : '<div class="empty">No tasks this week.</div>';
+
+  if (noDate.length) {
+    html += '<div class="list-section-label">No date yet</div>' + noDate.map(cardHtml).join('');
+  }
+  return html;
 }
 
 function byPriority(a, b) {
@@ -408,6 +425,7 @@ function pup(e) {
 
 // ---- boot ----
 CAL.y = today0().getFullYear(); CAL.m = today0().getMonth();
+LIST_WS = weekStart(today0());
 load();
 pollTimer = setInterval(poll, 25000);
 var mainEl = document.getElementById('main');
