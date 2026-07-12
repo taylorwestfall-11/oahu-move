@@ -270,37 +270,45 @@
     letter-spacing: .3px; margin: 18px 2px 8px;
   }
 
-  /* ---- Rentals view ---- */
+  /* ---- Rentals view (condensed row: thumb | info | actions) ---- */
   .rental-card {
-    background: var(--card); border-radius: 12px; overflow: hidden; margin-bottom: 12px;
-    box-shadow: var(--shadow); position: relative;
+    display: flex; align-items: stretch; gap: 9px; background: var(--card); border-radius: 12px;
+    padding: 7px; margin-bottom: 8px; box-shadow: var(--shadow);
   }
-  .rental-photo-wrap { position: relative; width: 100%; height: 170px; background: var(--chip); }
-  .rental-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .rental-photo-fallback {
+  .rental-thumb-wrap {
+    position: relative; flex: none; width: 72px; height: 72px; border-radius: 9px;
+    overflow: hidden; background: var(--chip); cursor: pointer;
+  }
+  .rental-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .rental-thumb-fallback {
     width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-    font-size: 34px; color: var(--muted); background: var(--chip);
+    font-size: 26px; color: var(--muted); background: var(--chip);
   }
   .rental-badge {
-    position: absolute; top: 8px; left: 8px; background: var(--accent2); color: #fff;
-    font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; letter-spacing: .3px;
+    position: absolute; top: 2px; left: 2px; background: var(--accent2); color: #fff;
+    font-size: 8.5px; font-weight: 700; padding: 1px 5px; border-radius: 8px; letter-spacing: .2px;
   }
-  .rental-pets { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; }
-  .pet-icon {
-    background: rgba(255,255,255,.92); border-radius: 50%; width: 26px; height: 26px;
-    display: flex; align-items: center; justify-content: center; font-size: 14px;
-    box-shadow: var(--shadow);
+  .rental-info { flex: 1; min-width: 0; cursor: pointer; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+  .rental-price-row { display: flex; align-items: baseline; gap: 6px; }
+  .rental-price { font-size: 15.5px; font-weight: 800; color: var(--accent); }
+  .rental-pets-inline { display: flex; gap: 2px; font-size: 12px; }
+  .rental-address {
+    display: block; font-size: 12px; color: var(--text); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; text-decoration: none;
   }
-  .rental-body { padding: 11px 12px 12px; }
-  .rental-price { font-size: 19px; font-weight: 800; color: var(--accent); }
-  .rental-address { font-size: 13.5px; color: var(--text); margin-top: 2px; }
-  .rental-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
-  .chip.perk { background: var(--done-bg); color: var(--accent); font-weight: 600; }
-  .rental-link { display: inline-block; margin-top: 9px; font-size: 12.5px; font-weight: 600; color: var(--accent); text-decoration: none; }
-  .rental-notes { margin-top: 7px; font-size: 12.5px; color: var(--muted); }
-  .rental-actions { display: flex; gap: 8px; margin-top: 11px; }
+  .rental-address.linked { color: var(--accent); text-decoration: underline; }
+  .rental-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 1px; }
+  .chip-sm {
+    font-size: 10px; padding: 1px 6px; border-radius: 20px; background: var(--chip);
+    color: var(--muted); white-space: nowrap;
+  }
+  .chip-sm.perk { background: var(--done-bg); color: var(--accent); font-weight: 600; }
+  .rental-notes { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rental-actions {
+    flex: none; display: flex; flex-direction: column; gap: 4px; justify-content: center;
+  }
   .rental-actions button {
-    flex: 1; border: 0; border-radius: 9px; padding: 9px 4px; font-size: 12.5px; font-weight: 700;
+    width: 32px; height: 32px; border: 0; border-radius: 8px; font-size: 14px;
     cursor: pointer; background: var(--chip); color: var(--text);
   }
   .rental-actions button.active-viewed { background: var(--norm); color: #fff; }

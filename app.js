@@ -432,38 +432,41 @@ function fmtMoney(n) {
 }
 function rentalCardHtml(r) {
   var photo = r.photoUrl
-    ? '<img class="rental-photo" src="' + esc(r.photoUrl) + '" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'rental-photo-fallback\',textContent:\'🏠\'}))">'
-    : '<div class="rental-photo-fallback">🏠</div>';
+    ? '<img class="rental-thumb" src="' + esc(r.photoUrl) + '" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'rental-thumb-fallback\',textContent:\'🏠\'}))">'
+    : '<div class="rental-thumb-fallback">🏠</div>';
   var meta = [];
-  if (r.beds) meta.push('<span class="chip">' + esc(r.beds) + ' bd</span>');
-  if (r.baths) meta.push('<span class="chip">' + esc(r.baths) + ' ba</span>');
-  if (r.sqft) meta.push('<span class="chip">' + esc(Number(r.sqft).toLocaleString('en-US')) + ' sqft</span>');
-  if (r.propertyType) meta.push('<span class="chip">' + esc(r.propertyType) + '</span>');
-  var pets = [];
-  if (r.petCat) pets.push('<span class="pet-icon" title="Cat friendly">🐱</span>');
-  if (r.petDog) pets.push('<span class="pet-icon" title="Dog friendly">🐕</span>');
-  var perks = [];
-  if (r.hasYard) perks.push('<span class="chip perk">🌳 Yard</span>');
-  if (r.hasAC) perks.push('<span class="chip perk">❄️ AC</span>');
+  if (r.beds) meta.push('<span class="chip-sm">' + esc(r.beds) + ' bd</span>');
+  if (r.baths) meta.push('<span class="chip-sm">' + esc(r.baths) + ' ba</span>');
+  if (r.sqft) meta.push('<span class="chip-sm">' + esc(Number(r.sqft).toLocaleString('en-US')) + ' sqft</span>');
+  if (r.hasYard) meta.push('<span class="chip-sm perk">🌳</span>');
+  if (r.hasAC) meta.push('<span class="chip-sm perk">❄️</span>');
+  var pets = '';
+  if (r.petCat || r.petDog) {
+    pets = '<span class="rental-pets-inline">' +
+      (r.petCat ? '<span title="Cat friendly">🐱</span>' : '') +
+      (r.petDog ? '<span title="Dog friendly">🐕</span>' : '') +
+    '</span>';
+  }
   return '<div class="rental-card">' +
-    '<div class="rental-photo-wrap" onclick="openEditRental(\'' + r.id + '\')">' +
-      (r.status === 'New' ? '<div class="rental-badge">🆕 New</div>' : '') +
-      (pets.length ? '<div class="rental-pets">' + pets.join('') + '</div>' : '') +
+    '<div class="rental-thumb-wrap" onclick="openEditRental(\'' + r.id + '\')">' +
+      (r.status === 'New' ? '<div class="rental-badge">NEW</div>' : '') +
       photo +
     '</div>' +
-    '<div class="rental-body">' +
-      '<div onclick="openEditRental(\'' + r.id + '\')">' +
-        (r.price ? '<div class="rental-price">' + fmtMoney(r.price) + '/mo</div>' : '') +
-        (r.address ? '<div class="rental-address">' + esc(r.address) + '</div>' : '') +
-        '<div class="rental-meta">' + meta.join('') + perks.join('') + '</div>' +
-        (r.notes ? '<div class="rental-notes">' + linkify(r.notes) + '</div>' : '') +
+    '<div class="rental-info" onclick="openEditRental(\'' + r.id + '\')">' +
+      '<div class="rental-price-row">' +
+        (r.price ? '<span class="rental-price">' + fmtMoney(r.price) + '/mo</span>' : '') +
+        pets +
       '</div>' +
-      (r.url ? '<a class="rental-link" href="' + esc(r.url) + '" target="_blank" rel="noopener">View listing ↗</a>' : '') +
-      '<div class="rental-actions">' +
-        '<button class="' + (r.status === 'Viewed' ? 'active-viewed' : '') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'Viewed\')">👀 Viewed</button>' +
-        '<button class="' + (r.status === 'Saved' ? 'active-save' : '') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'' + (r.status === 'Saved' ? 'Viewed' : 'Saved') + '\')">⭐ ' + (r.status === 'Saved' ? 'Saved' : 'Save') + '</button>' +
-        '<button onclick="patchListing(\'' + r.id + '\',\'status\',\'Declined\')">✕ Decline</button>' +
-      '</div>' +
+      (r.address ? (r.url
+        ? '<a class="rental-address linked" href="' + esc(r.url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + esc(r.address) + '</a>'
+        : '<div class="rental-address">' + esc(r.address) + '</div>') : '') +
+      '<div class="rental-meta">' + meta.join('') + '</div>' +
+      (r.notes ? '<div class="rental-notes">' + esc(r.notes) + '</div>' : '') +
+    '</div>' +
+    '<div class="rental-actions">' +
+      '<button class="' + (r.status === 'Viewed' ? 'active-viewed' : '') + '" title="Viewed" onclick="patchListing(\'' + r.id + '\',\'status\',\'Viewed\')">👀</button>' +
+      '<button class="' + (r.status === 'Saved' ? 'active-save' : '') + '" title="' + (r.status === 'Saved' ? 'Saved' : 'Save') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'' + (r.status === 'Saved' ? 'Viewed' : 'Saved') + '\')">⭐</button>' +
+      '<button title="Decline" onclick="patchListing(\'' + r.id + '\',\'status\',\'Declined\')">✕</button>' +
     '</div>' +
   '</div>';
 }
