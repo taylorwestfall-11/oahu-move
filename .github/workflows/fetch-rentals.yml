@@ -1,0 +1,25 @@
+name: Fetch Oahu rental listings
+
+on:
+  schedule:
+    # Twice daily, ~8am and ~6pm HST. Hawaii has no DST, so HST is always
+    # UTC-10 — that's 18:00 and 04:00 UTC.
+    - cron: '0 18 * * *'
+    - cron: '0 4 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  fetch-rentals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run RentCast import
+        working-directory: scraper
+        env:
+          RENTCAST_API_KEY: ${{ secrets.RENTCAST_API_KEY }}
+          RENTALS_API_BASE: ${{ secrets.RENTALS_API_BASE }}
+          RENTALS_IMPORT_KEY: ${{ secrets.RENTALS_IMPORT_KEY }}
+        run: node fetch-rentals.js

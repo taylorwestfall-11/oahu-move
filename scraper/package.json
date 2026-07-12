@@ -1,0 +1,11 @@
+{
+  "name": "oahu-rentals-scraper",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Twice-daily RentCast import for the Oahu Move app's Rentals tab.",
+  "type": "commonjs",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "fetch": "node fetch-rentals.js"
+  }
+}
