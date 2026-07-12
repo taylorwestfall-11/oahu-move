@@ -113,6 +113,7 @@ function setView(v) {
     document.getElementById('seg' + x.charAt(0).toUpperCase() + x.slice(1)).className = (v === x) ? 'active' : '';
   });
   document.getElementById('calSubseg').style.display = (v === 'cal') ? 'flex' : 'none';
+  document.getElementById('filterControls').style.display = (v === 'cal') ? 'none' : 'flex';
   render();
 }
 function setCalSubview(v) {
@@ -125,11 +126,16 @@ function setCalSubview(v) {
 
 function render() {
   updateHeader();
-  var list = filtered();
   var main = document.getElementById('main');
-  if (VIEW === 'cal' && CAL_SUBVIEW === 'month') { main.innerHTML = renderCalendar(list); return; }
+  if (VIEW === 'cal') {
+    // Calendar view always shows everything — no filters/search apply here.
+    if (CAL_SUBVIEW === 'month') { main.innerHTML = renderCalendar(DATA.tasks); return; }
+    main.innerHTML = renderWeeks(DATA.tasks);
+    return;
+  }
+  var list = filtered();
   if (!list.length) { main.innerHTML = '<div class="empty">No tasks match your filters.</div>'; return; }
-  main.innerHTML = (VIEW === 'cal') ? renderWeeks(list) : renderList(list);
+  main.innerHTML = renderList(list);
 }
 
 // ---- calendar view ----
@@ -185,11 +191,28 @@ function renderCalendar(list) {
   });
   html += '</div>';
 
+  html += renderWeekFocus(list);
+
   var undated = list.filter(function (t) { return !t.due; }).sort(byPriority);
   html += '<div class="cal-tray"><div class="tray-label">📥 Unscheduled — drag onto a day</div><div class="tray-chips">' +
     (undated.length ? undated.map(calChip).join('') : '<span class="tray-empty">Nothing unscheduled 🎉</span>') +
     '</div></div>';
   html += '<div class="cal-hint">Drag a task to reschedule · tap a day to add · tap a task to edit</div>';
+  return html;
+}
+
+function renderWeekFocus(list) {
+  var ws = weekStart(today0());
+  var we = new Date(ws); we.setDate(we.getDate() + 6);
+  var items = list.filter(function (t) {
+    if (t.status === 'Done') return false;
+    var d = parseDue(t.due);
+    return d && d >= ws && d <= we;
+  }).sort(byPriority);
+  var html = '<div class="week-focus"><div class="wf-header">🔥 This Week’s Focus' +
+    '<small>' + fmtShort(ws) + ' – ' + fmtShort(we) + '</small></div>';
+  html += items.length ? items.map(cardHtml).join('') : '<div class="wf-empty">Nothing due this week — nice 🎉</div>';
+  html += '</div>';
   return html;
 }
 

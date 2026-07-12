@@ -75,6 +75,7 @@
   .seg.subseg { padding: 2px; background: transparent; border: 1px solid var(--line); }
   .seg.subseg button { padding: 6px; font-size: 12.5px; }
   .seg.subseg button.active { background: var(--chip); box-shadow: none; }
+  .filter-controls { display: none; flex-direction: column; gap: 8px; } /* default view is Calendar */
   .filters { display: flex; gap: 6px; flex-wrap: wrap; }
   .filters select, .search {
     flex: 1; min-width: 90px; padding: 7px 8px; border: 1px solid var(--line);
@@ -201,6 +202,14 @@
   .tray-chips .cal-chip { flex: none; max-width: 170px; font-size: 11px; padding: 5px 8px; }
   .tray-empty { font-size: 12.5px; color: var(--muted); }
   .cal-hint { text-align: center; font-size: 11px; color: var(--muted); margin: 12px 4px 0; }
+
+  .week-focus { margin-top: 18px; }
+  .wf-header {
+    display: flex; align-items: baseline; gap: 6px; font-size: 14.5px; font-weight: 700;
+    margin: 0 2px 9px; padding-bottom: 6px; border-bottom: 2px solid var(--accent); color: var(--accent);
+  }
+  .wf-header small { color: var(--muted); font-weight: 600; font-size: 11.5px; }
+  .wf-empty { text-align: center; color: var(--muted); padding: 18px; font-size: 13px; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); }
 </style>
 </head>
 <body>
@@ -229,16 +238,18 @@
     <button id="subMonth" class="active" onclick="setCalSubview('month')">Month</button>
     <button id="subWeek" onclick="setCalSubview('week')">Week</button>
   </div>
-  <div class="filters">
-    <select id="fCat" onchange="render()"><option value="">All categories</option></select>
-    <select id="fOwner" onchange="render()"><option value="">All owners</option></select>
-    <select id="fStatus" onchange="render()">
-      <option value="">Any status</option>
-      <option>Not Started</option><option>In Progress</option><option>Done</option>
-    </select>
+  <div class="filter-controls" id="filterControls">
+    <div class="filters">
+      <select id="fCat" onchange="render()"><option value="">All categories</option></select>
+      <select id="fOwner" onchange="render()"><option value="">All owners</option></select>
+      <select id="fStatus" onchange="render()">
+        <option value="">Any status</option>
+        <option>Not Started</option><option>In Progress</option><option>Done</option>
+      </select>
+    </div>
+    <input class="search" id="search" placeholder="Search tasks…" oninput="render()">
+    <label class="toggle-done"><input type="checkbox" id="hideDone" onchange="render()"> Hide completed</label>
   </div>
-  <input class="search" id="search" placeholder="Search tasks…" oninput="render()">
-  <label class="toggle-done"><input type="checkbox" id="hideDone" onchange="render()"> Hide completed</label>
 </div>
 
 <main id="main"><div class="empty">Loading your move plan…</div></main>
