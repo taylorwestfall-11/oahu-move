@@ -121,6 +121,7 @@ function normalizeRentCastListing(l) {
     externalId: 'rentcast:' + l.id,
     source: 'RentCast',
     address: l.formattedAddress || [l.addressLine1, l.city, l.state, l.zipCode].filter(Boolean).join(', '),
+    addressLine2: l.addressLine2 || '',
     url: '', // RentCast doesn't return a public listing URL or photos
     photoUrl: '',
     price: l.price || '',
@@ -137,6 +138,20 @@ function normalizeRentCastListing(l) {
   };
 }
 
+// RentCast's propertyType field is unreliable for Hawaii: verified against
+// real live data that units explicitly inside a building get tagged "Single
+// Family" or "Townhouse" anyway — e.g. "444 Niu St, Apt 3208B" as Townhouse,
+// "242 Kaiulani Ave" (253 sqft, 0 bed) as Single Family. A non-empty
+// addressLine2 is one clean signal; also confirmed some units put the unit
+// marker directly in addressLine1/formattedAddress instead (e.g. "37
+// Cypress Ave Apt D") with no addressLine2 at all, so both are checked.
+const UNIT_MARKER_RE = /\b(apt|apartment|unit|ste|suite)\b|#\s*[a-z0-9]/i;
+function isActuallyDetachedUnit(l) {
+  if (l.addressLine2) return false;
+  if (UNIT_MARKER_RE.test(l.address)) return false;
+  return true;
+}
+
 function passesHardFilter(l) {
   const price = Number(l.price) || 0;
   const beds = Number(l.beds) || 0;
@@ -145,6 +160,7 @@ function passesHardFilter(l) {
   if (beds < MIN_BEDS) return false;
   if (baths < MIN_BATHS) return false;
   if (!ALLOWED_PROPERTY_TYPES.includes(l.propertyType)) return false;
+  if (!isActuallyDetachedUnit(l)) return false;
   return true;
 }
 
