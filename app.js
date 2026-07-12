@@ -9,6 +9,7 @@ var VIEW = 'cal';
 var BUSY = false;
 var pollTimer = null;
 var CAL = { y: 2026, m: 6 }; // calendar month shown (set to today on boot)
+var CAL_SUBVIEW = 'month'; // Calendar tab: 'month' grid or 'week' list
 var WF_SHOW_DONE = false; // "This Week's Focus" — show completed tasks toggle
 var LIST_WS = null; // List view — start (Sunday) of the week currently shown (set to today's week on boot)
 
@@ -113,12 +114,21 @@ function toggleWfDone(checked) {
   render();
 }
 
+function setCalSubview(v) {
+  CAL_SUBVIEW = v;
+  render();
+}
+
 function render() {
   updateHeader();
   var main = document.getElementById('main');
   if (VIEW === 'cal') {
     // Calendar view always shows everything — no filters/search apply here.
-    main.innerHTML = renderCalendar(DATA.tasks);
+    if (CAL_SUBVIEW === 'week') {
+      main.innerHTML = renderCalNav() + renderWeekCards(DATA.tasks, LIST_WS);
+    } else {
+      main.innerHTML = renderCalendar(DATA.tasks);
+    }
     return;
   }
   main.innerHTML = renderList(filtered());
@@ -136,6 +146,28 @@ function changeMonth(delta) {
 }
 function calToday() { var t = today0(); CAL.y = t.getFullYear(); CAL.m = t.getMonth(); render(); }
 
+function calPrev() { if (CAL_SUBVIEW === 'week') changeListWeek(-1); else changeMonth(-1); }
+function calNext() { if (CAL_SUBVIEW === 'week') changeListWeek(1); else changeMonth(1); }
+function calTodayNav() { if (CAL_SUBVIEW === 'week') listWeekToday(); else calToday(); }
+
+function renderCalNav() {
+  var title = (CAL_SUBVIEW === 'week')
+    ? (function () { var we = new Date(LIST_WS); we.setDate(we.getDate() + 6); return fmtShort(LIST_WS) + ' – ' + fmtShort(we); })()
+    : MONTHS[CAL.m] + ' ' + CAL.y;
+  return '<div class="cal-nav">' +
+      '<button onclick="calPrev()" aria-label="Previous">‹</button>' +
+      '<div class="cal-title">' + title + '</div>' +
+      '<button onclick="calNext()" aria-label="Next">›</button>' +
+    '</div>' +
+    '<div class="cal-subnav">' +
+      '<button class="cal-today-btn" onclick="calTodayNav()">Today</button>' +
+      '<div class="seg subseg">' +
+        '<button class="' + (CAL_SUBVIEW === 'month' ? 'active' : '') + '" onclick="setCalSubview(\'month\')">Month</button>' +
+        '<button class="' + (CAL_SUBVIEW === 'week' ? 'active' : '') + '" onclick="setCalSubview(\'week\')">Week</button>' +
+      '</div>' +
+    '</div>';
+}
+
 function calChip(t) {
   var p = t.priority === 'Critical' ? 'crit' : t.priority === 'High' ? 'high' : t.priority === 'Low' ? 'low' : 'norm';
   var done = t.status === 'Done' ? ' chip-done' : '';
@@ -151,11 +183,7 @@ function renderCalendar(list) {
   var startDow = new Date(y, m, 1).getDay();
   var daysInMonth = new Date(y, m + 1, 0).getDate();
 
-  var html = '<div class="cal-nav">' +
-    '<button onclick="changeMonth(-1)" aria-label="Previous month">‹</button>' +
-    '<div class="cal-title">' + MONTHS[m] + ' ' + y + '</div>' +
-    '<button class="cal-today-btn" onclick="calToday()">Today</button>' +
-    '<button onclick="changeMonth(1)" aria-label="Next month">›</button></div>';
+  var html = renderCalNav();
 
   html += '<div class="cal-grid cal-dow">' +
     ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function (d) { return '<div class="dow">' + d + '</div>'; }).join('') +
@@ -259,30 +287,35 @@ function listWeekToday() {
   render();
 }
 
-function renderList(list) {
-  var we = new Date(LIST_WS); we.setDate(we.getDate() + 6);
-  var isCurrentWeek = weekStart(today0()).getTime() === LIST_WS.getTime();
-
+function renderWeekCards(list, ws) {
+  var we = new Date(ws); we.setDate(we.getDate() + 6);
   var inWeek = list.filter(function (t) {
     var d = parseDue(t.due);
-    return d && d >= LIST_WS && d <= we;
+    return d && d >= ws && d <= we;
   }).sort(function (a, b) {
     var da = parseDue(a.due), db = parseDue(b.due);
     return (da - db) || byPriority(a, b);
   });
   var noDate = list.filter(function (t) { return !t.due; }).sort(byPriority);
-
-  var html = '<div class="cal-nav">' +
-    '<button onclick="changeListWeek(-1)" aria-label="Previous week">‹</button>' +
-    '<div class="cal-title">' + fmtShort(LIST_WS) + ' – ' + fmtShort(we) + (isCurrentWeek ? ' <small class="lw-now">This Week</small>' : '') + '</div>' +
-    '<button class="cal-today-btn" onclick="listWeekToday()">This Week</button>' +
-    '<button onclick="changeListWeek(1)" aria-label="Next week">›</button></div>';
-
-  html += inWeek.length ? inWeek.map(cardHtml).join('') : '<div class="empty">No tasks this week.</div>';
-
+  var html = inWeek.length ? inWeek.map(cardHtml).join('') : '<div class="empty">No tasks this week.</div>';
   if (noDate.length) {
     html += '<div class="list-section-label">No date yet</div>' + noDate.map(cardHtml).join('');
   }
+  return html;
+}
+
+function renderList(list) {
+  var we = new Date(LIST_WS); we.setDate(we.getDate() + 6);
+  var isCurrentWeek = weekStart(today0()).getTime() === LIST_WS.getTime();
+
+  var html = '<div class="cal-nav">' +
+      '<button onclick="changeListWeek(-1)" aria-label="Previous week">‹</button>' +
+      '<div class="cal-title">' + fmtShort(LIST_WS) + ' – ' + fmtShort(we) + (isCurrentWeek ? ' <small class="lw-now">This Week</small>' : '') + '</div>' +
+      '<button onclick="changeListWeek(1)" aria-label="Next week">›</button>' +
+    '</div>' +
+    '<div class="cal-subnav"><button class="cal-today-btn" onclick="listWeekToday()">This Week</button></div>';
+
+  html += renderWeekCards(list, LIST_WS);
   return html;
 }
 
