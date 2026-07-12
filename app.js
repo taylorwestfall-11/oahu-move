@@ -4,13 +4,6 @@
 // ⚠️ SET THIS to your Apps Script Web App URL after deploying (ends in /exec).
 var API_BASE = 'https://script.google.com/macros/s/AKfycbyEAKsrROuR3KAeiCcD5z3sWlB7wrm89UTS_F05wtsdUAj_r3JgzIwDph-tKbrwTBLQ/exec';
 
-// ⚠️ SET THIS to a Google Maps Platform API key with the Street View Static
-// API enabled, restricted (in the Google Cloud Console) to HTTP referrer
-// https://taylorwestfall-11.github.io/* — used to show a real street-level
-// photo of a rental's address when the listing itself has no photo (e.g.
-// RentCast imports, which have none). Leave blank to just show the house
-// icon instead. See SETUP.md.
-var MAPS_API_KEY = 'PASTE_YOUR_GOOGLE_MAPS_API_KEY_HERE';
 
 var DATA = { tasks: [], owners: [], statuses: [], priorities: [], categories: [] };
 var RENTAL_DATA = { listings: [], statuses: [] };
@@ -438,21 +431,12 @@ function fmtMoney(n) {
   n = Number(n);
   return isNaN(n) ? '' : '$' + n.toLocaleString('en-US');
 }
-// Street View Static API image for an address — used when a listing has no
-// photo of its own (true for every RentCast import). Google returns a plain
-// 200 OK gray "no imagery here" tile rather than an HTTP error when there's
-// no coverage at a spot, so the onerror fallback below won't catch that
-// case — a known, accepted cosmetic gap.
-function streetViewUrl(address) {
-  if (!MAPS_API_KEY || MAPS_API_KEY.indexOf('PASTE_YOUR') === 0 || !address) return '';
-  return 'https://maps.googleapis.com/maps/api/streetview?size=200x200&fov=80&location=' +
-    encodeURIComponent(address) + '&key=' + MAPS_API_KEY;
-}
-
 function rentalCardHtml(r) {
-  var photoSrc = r.photoUrl || streetViewUrl(r.address);
-  var photo = photoSrc
-    ? '<img class="rental-thumb" src="' + esc(photoSrc) + '" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'rental-thumb-fallback\',textContent:\'🏠\'}))">'
+  // photoUrl (Street View or a real photo) is looked up once, server-side,
+  // when a listing is first added — see Code.gs streetViewUrl_(). Nothing
+  // dynamic happens here, so viewing the tab never re-triggers a lookup.
+  var photo = r.photoUrl
+    ? '<img class="rental-thumb" src="' + esc(r.photoUrl) + '" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'rental-thumb-fallback\',textContent:\'🏠\'}))">'
     : '<div class="rental-thumb-fallback">🏠</div>';
   var meta = [];
   if (r.beds) meta.push('<span class="chip-sm">' + esc(r.beds) + ' bd</span>');
