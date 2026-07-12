@@ -2,7 +2,7 @@
 // Google Apps Script JSON API backend (Code.gs doGet/doPost).
 
 // ⚠️ SET THIS to your Apps Script Web App URL after deploying (ends in /exec).
-var API_BASE = 'PASTE_YOUR_APPS_SCRIPT_EXEC_URL_HERE';
+var API_BASE = 'https://script.google.com/macros/s/AKfycbyEAKsrROuR3KAeiCcD5z3sWlB7wrm89UTS_F05wtsdUAj_r3JgzIwDph-tKbrwTBLQ/exec';
 
 var DATA = { tasks: [], owners: [], statuses: [], priorities: [], categories: [] };
 var VIEW = 'cal';
