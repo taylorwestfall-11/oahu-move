@@ -123,13 +123,22 @@ function setView(v) {
     document.getElementById('seg' + x.charAt(0).toUpperCase() + x.slice(1)).className = (v === x) ? 'active' : '';
   });
   document.getElementById('filterControls').style.display = (v === 'list') ? 'flex' : 'none';
+  if (v === 'list' && LIST_WS < weekStart(today0())) { LIST_WS = weekStart(today0()); }
   render();
-  if (v === 'list') {
-    setTimeout(function () {
-      var el = document.querySelector('.week-strip-item.active');
-      if (el) el.scrollIntoView({ block: 'center' });
-    }, 30);
-  }
+  if (v === 'list') { setTimeout(centerWeekStripItem, 30); }
+}
+
+// Centers the active week-strip item WITHIN the strip's own scroll box only —
+// never touches page/window scroll (unlike scrollIntoView, which can drag the
+// whole page down and hide the top tabs).
+function centerWeekStripItem() {
+  var strip = document.getElementById('weekStrip');
+  var active = strip ? strip.querySelector('.week-strip-item.active') : null;
+  if (!strip || !active) return;
+  var stripRect = strip.getBoundingClientRect();
+  var itemRect = active.getBoundingClientRect();
+  var delta = (itemRect.top + itemRect.height / 2) - (stripRect.top + stripRect.height / 2);
+  strip.scrollTop += delta;
 }
 function fabClick() {
   if (VIEW === 'rentals') openAddRental(); else openAdd();
@@ -367,7 +376,7 @@ function fmtDueShort(s) { var d = parseDue(s); return d ? d.toLocaleDateString('
 function renderWeekStrip(list) {
   var base = weekStart(today0());
   var html = '<div class="week-strip" id="weekStrip">';
-  for (var i = -6; i <= 26; i++) {
+  for (var i = 0; i <= 26; i++) {
     var ws = new Date(base); ws.setDate(ws.getDate() + i * 7);
     var we = new Date(ws); we.setDate(we.getDate() + 6);
     var isActive = ws.getTime() === LIST_WS.getTime();
@@ -385,10 +394,7 @@ function jumpToWeek(isoStr) {
   var p = isoStr.split('-');
   LIST_WS = new Date(+p[0], +p[1] - 1, +p[2]);
   render();
-  setTimeout(function () {
-    var el = document.querySelector('.week-strip-item.active');
-    if (el) el.scrollIntoView({ block: 'center' });
-  }, 30);
+  setTimeout(centerWeekStripItem, 30);
 }
 
 function renderList(list) {

@@ -74,12 +74,11 @@
   }
   .seg button.active { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
   .filter-controls { display: none; flex-direction: column; gap: 8px; } /* default view is Calendar */
-  .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filters { display: flex; gap: 6px; }
   .filters select, .search {
-    flex: 1; min-width: 90px; padding: 7px 8px; border: 1px solid var(--line);
+    flex: 1; min-width: 0; padding: 7px 8px; border: 1px solid var(--line);
     border-radius: 8px; background: var(--card); color: var(--text); font-size: 13px;
   }
-  .search { min-width: 100%; }
   .toggle-done { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 
   main { padding: 8px 12px; }
@@ -335,8 +334,8 @@
   <div class="filter-controls" id="filterControls">
     <div class="filters">
       <select id="fCat" onchange="render()"><option value="">All categories</option></select>
+      <input class="search" id="search" placeholder="Search tasks…" oninput="render()">
     </div>
-    <input class="search" id="search" placeholder="Search tasks…" oninput="render()">
     <label class="toggle-done"><input type="checkbox" id="showDone" onchange="render()"> Show completed</label>
   </div>
 </div>
