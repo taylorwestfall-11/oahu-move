@@ -124,6 +124,12 @@ function setView(v) {
   });
   document.getElementById('filterControls').style.display = (v === 'list') ? 'flex' : 'none';
   render();
+  if (v === 'list') {
+    setTimeout(function () {
+      var el = document.querySelector('.week-strip-item.active');
+      if (el) el.scrollIntoView({ block: 'center' });
+    }, 30);
+  }
 }
 function fabClick() {
   if (VIEW === 'rentals') openAddRental(); else openAdd();
@@ -344,35 +350,68 @@ function listWeekToday() {
   render();
 }
 
-function renderWeekCards(list, ws) {
-  var we = new Date(ws); we.setDate(we.getDate() + 6);
-  var inWeek = list.filter(function (t) {
-    var d = parseDue(t.due);
-    return d && d >= ws && d <= we;
-  }).sort(function (a, b) {
-    var da = parseDue(a.due), db = parseDue(b.due);
-    return (da - db) || byPriority(a, b);
-  });
-  var noDate = list.filter(function (t) { return !t.due; }).sort(byPriority);
-  var html = inWeek.length ? inWeek.map(cardHtml).join('') : '<div class="empty">No tasks this week.</div>';
-  if (noDate.length) {
-    html += '<div class="list-section-label">No date yet</div>' + noDate.map(cardHtml).join('');
+function listRowHtml(t) {
+  var pClass = t.priority === 'Critical' ? 'crit' : t.priority === 'High' ? 'high' : t.priority === 'Low' ? 'low' : '';
+  var doneClass = t.status === 'Done' ? ' done' : '';
+  var due = parseDue(t.due);
+  var overdue = due && t.status !== 'Done' && daysBetween(due, today0()) < 0;
+  return '<div class="lrow ' + pClass + doneClass + '" onclick="openEdit(\'' + t.id + '\')">' +
+    '<input type="checkbox" class="cbox lrow-cb"' + (t.status === 'Done' ? ' checked' : '') +
+      ' onclick="event.stopPropagation()" onchange="patch(\'' + t.id + '\',\'status\',this.checked?\'Done\':\'Not Started\')">' +
+    '<div class="lrow-text">' + (t.milestone ? '<span class="lrow-star">★ </span>' : '') + esc(t.task) + '</div>' +
+    (t.due ? '<div class="lrow-due' + (overdue ? ' overdue' : '') + '">' + fmtDueShort(t.due) + '</div>' : '') +
+  '</div>';
+}
+function fmtDueShort(s) { var d = parseDue(s); return d ? d.toLocaleDateString('en-US', { weekday: 'short' }) : ''; }
+
+function renderWeekStrip(list) {
+  var base = weekStart(today0());
+  var html = '<div class="week-strip" id="weekStrip">';
+  for (var i = -6; i <= 26; i++) {
+    var ws = new Date(base); ws.setDate(ws.getDate() + i * 7);
+    var we = new Date(ws); we.setDate(we.getDate() + 6);
+    var isActive = ws.getTime() === LIST_WS.getTime();
+    var isTodayWeek = (i === 0);
+    var hasTasks = list.some(function (t) { var d = parseDue(t.due); return d && d >= ws && d <= we; });
+    html += '<div class="week-strip-item' + (isActive ? ' active' : '') + (isTodayWeek ? ' is-today-week' : '') + (hasTasks ? ' has-tasks' : '') +
+      '" onclick="jumpToWeek(\'' + iso(ws) + '\')">' +
+      '<div class="wsi-month">' + MONTHS[ws.getMonth()].slice(0, 3).toUpperCase() + '</div>' +
+      '<div class="wsi-day">' + ws.getDate() + '</div></div>';
   }
+  html += '</div>';
   return html;
+}
+function jumpToWeek(isoStr) {
+  var p = isoStr.split('-');
+  LIST_WS = new Date(+p[0], +p[1] - 1, +p[2]);
+  render();
+  setTimeout(function () {
+    var el = document.querySelector('.week-strip-item.active');
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, 30);
 }
 
 function renderList(list) {
   var we = new Date(LIST_WS); we.setDate(we.getDate() + 6);
   var isCurrentWeek = weekStart(today0()).getTime() === LIST_WS.getTime();
 
-  var html = '<div class="cal-nav">' +
-      '<button onclick="changeListWeek(-1)" aria-label="Previous week">‹</button>' +
-      '<div class="cal-title">' + fmtShort(LIST_WS) + ' – ' + fmtShort(we) + (isCurrentWeek ? ' <small class="lw-now">This Week</small>' : '') + '</div>' +
-      '<button onclick="changeListWeek(1)" aria-label="Next week">›</button>' +
-    '</div>' +
-    '<div class="cal-subnav"><button class="cal-today-btn" onclick="listWeekToday()">This Week</button></div>';
+  var inWeek = list.filter(function (t) {
+    var d = parseDue(t.due);
+    return d && d >= LIST_WS && d <= we;
+  }).sort(function (a, b) {
+    var da = parseDue(a.due), db = parseDue(b.due);
+    return (da - db) || byPriority(a, b);
+  });
+  var noDate = list.filter(function (t) { return !t.due; }).sort(byPriority);
 
-  html += renderWeekCards(list, LIST_WS);
+  var html = '<div class="list-layout">' + renderWeekStrip(list) + '<div class="list-content">';
+  html += '<div class="list-week-title">' + fmtShort(LIST_WS) + ' – ' + fmtShort(we) +
+    (isCurrentWeek ? '<span class="lw-now">This Week</span>' : '') + '</div>';
+  html += inWeek.length ? inWeek.map(listRowHtml).join('') : '<div class="empty">No tasks this week.</div>';
+  if (noDate.length) {
+    html += '<div class="list-section-label">No date yet</div>' + noDate.map(listRowHtml).join('');
+  }
+  html += '</div></div>';
   return html;
 }
 
@@ -482,6 +521,7 @@ function openAdd(prefillDate) {
   document.getElementById('mStatus').value = 'Not Started';
   document.getElementById('mMilestone').value = '';
   document.getElementById('mNotes').value = '';
+  document.getElementById('mDelete').classList.add('hidden');
   document.getElementById('modalBg').classList.add('show');
 }
 function openEdit(id) {
@@ -496,7 +536,14 @@ function openEdit(id) {
   document.getElementById('mStatus').value = t.status;
   document.getElementById('mMilestone').value = t.milestone ? 'yes' : '';
   document.getElementById('mNotes').value = t.notes || '';
+  document.getElementById('mDelete').classList.remove('hidden');
   document.getElementById('modalBg').classList.add('show');
+}
+function deleteFromModal() {
+  var id = document.getElementById('mId').value;
+  if (!id) return;
+  closeModal();
+  del(id);
 }
 function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
 function saveModal() {
