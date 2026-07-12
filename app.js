@@ -163,10 +163,13 @@ function renderCalNav() {
       '<button class="cal-today-btn" onclick="calTodayNav()">Today</button>' +
     '</div>' +
     '<div class="cal-subnav">' +
-      '<div class="seg subseg">' +
-        '<button class="' + (CAL_SUBVIEW === 'month' ? 'active' : '') + '" onclick="setCalSubview(\'month\')">Month</button>' +
-        '<button class="' + (CAL_SUBVIEW === 'week' ? 'active' : '') + '" onclick="setCalSubview(\'week\')">Week</button>' +
+      '<div class="cal-subnav-center">' +
+        '<div class="seg subseg">' +
+          '<button class="' + (CAL_SUBVIEW === 'month' ? 'active' : '') + '" onclick="setCalSubview(\'month\')">Month</button>' +
+          '<button class="' + (CAL_SUBVIEW === 'week' ? 'active' : '') + '" onclick="setCalSubview(\'week\')">Week</button>' +
+        '</div>' +
       '</div>' +
+      '<div class="cal-subnav-spacer"></div>' +
     '</div>';
 }
 
@@ -208,13 +211,17 @@ function renderCalendar(list) {
   html += '</div>';
 
   html += renderWeekFocus(list);
-
-  var undated = list.filter(function (t) { return !t.due; }).sort(byPriority);
-  html += '<div class="cal-tray"><div class="tray-label">📥 Unscheduled — drag onto a day</div><div class="tray-chips">' +
-    (undated.length ? undated.map(calChip).join('') : '<span class="tray-empty">Nothing unscheduled 🎉</span>') +
-    '</div></div>';
+  html += renderUnscheduledTray(list);
   html += '<div class="cal-hint">Drag a task to reschedule · tap a day to add · tap a task to edit</div>';
   return html;
+}
+
+function renderUnscheduledTray(list) {
+  var undated = list.filter(function (t) { return !t.due; }).sort(byPriority);
+  if (!undated.length) return '';
+  return '<div class="cal-tray"><div class="tray-label">📥 Unscheduled — drag onto a day</div><div class="tray-chips">' +
+    undated.map(function (t) { return calChip(t); }).join('') +
+    '</div></div>';
 }
 
 function renderCalendarWeekGrid(list, ws) {
@@ -237,10 +244,7 @@ function renderCalendarWeekGrid(list, ws) {
   }
   html += '</div>';
 
-  var undated = list.filter(function (t) { return !t.due; }).sort(byPriority);
-  html += '<div class="cal-tray"><div class="tray-label">📥 Unscheduled — drag onto a day</div><div class="tray-chips">' +
-    (undated.length ? undated.map(function (t) { return calChip(t); }).join('') : '<span class="tray-empty">Nothing unscheduled 🎉</span>') +
-    '</div></div>';
+  html += renderUnscheduledTray(list);
   html += '<div class="cal-hint">Drag a task to reschedule · tap a day to add · tap a task to edit</div>';
   return html;
 }
