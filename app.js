@@ -5,7 +5,9 @@
 var API_BASE = 'https://script.google.com/macros/s/AKfycbyEAKsrROuR3KAeiCcD5z3sWlB7wrm89UTS_F05wtsdUAj_r3JgzIwDph-tKbrwTBLQ/exec';
 
 var DATA = { tasks: [], owners: [], statuses: [], priorities: [], categories: [] };
+var RENTAL_DATA = { listings: [], statuses: [] };
 var VIEW = 'cal';
+var RENTAL_SUBVIEW = 'active'; // Rentals tab: 'active' (New/Viewed) or 'saved'
 var BUSY = false;
 var pollTimer = null;
 var CAL = { y: 2026, m: 6 }; // calendar month shown (set to today on boot)
@@ -35,6 +37,11 @@ function run(fn) {
   if (fn === 'updateTask') return apiPost('updateTask', { task: args[0] });
   if (fn === 'patchTask') return apiPost('patchTask', { id: args[0], field: args[1], value: args[2] });
   if (fn === 'deleteTask') return apiPost('deleteTask', { id: args[0] });
+  if (fn === 'getRentals') return apiGet('getRentals');
+  if (fn === 'addListing') return apiPost('addListing', { listing: args[0] });
+  if (fn === 'updateListing') return apiPost('updateListing', { listing: args[0] });
+  if (fn === 'patchListing') return apiPost('patchListing', { id: args[0], field: args[1], value: args[2] });
+  if (fn === 'deleteListing') return apiPost('deleteListing', { id: args[0] });
   return Promise.reject(new Error('Unknown run() fn: ' + fn));
 }
 
@@ -50,16 +57,25 @@ function toast(msg) {
 }
 
 // ---- load / refresh ----
+// Tolerates a not-yet-redeployed backend (getRentals unknown to an older
+// Apps Script deployment) by falling back to an empty rentals list instead
+// of crashing the whole render.
+function safeRentals_(r) { return (r && r.listings) ? r : { listings: [], statuses: RENTAL_DATA.statuses || [] }; }
 function load() {
   setBusy(true);
-  run('getData').then(function (d) {
-    DATA = d; setBusy(false); fillFilters(); render();
+  Promise.all([run('getData'), run('getRentals')]).then(function (r) {
+    DATA = r[0]; RENTAL_DATA = safeRentals_(r[1]); setBusy(false); fillFilters(); render();
   }).catch(function (e) { setBusy(false); toast('Load failed — retrying'); });
 }
 function poll() {
-  if (BUSY || document.getElementById('modalBg').classList.contains('show')) return;
-  run('getData').then(function (d) {
-    if (JSON.stringify(d.tasks) !== JSON.stringify(DATA.tasks)) { DATA = d; render(); }
+  if (BUSY || document.getElementById('modalBg').classList.contains('show') ||
+      document.getElementById('rentalModalBg').classList.contains('show')) return;
+  Promise.all([run('getData'), run('getRentals')]).then(function (r) {
+    var changed = false;
+    var rentals = safeRentals_(r[1]);
+    if (JSON.stringify(r[0].tasks) !== JSON.stringify(DATA.tasks)) { DATA = r[0]; changed = true; }
+    if (JSON.stringify(rentals.listings) !== JSON.stringify(RENTAL_DATA.listings)) { RENTAL_DATA = rentals; changed = true; }
+    if (changed) render();
   }).catch(function () {});
 }
 
@@ -103,11 +119,14 @@ function filtered() {
 // ---- render ----
 function setView(v) {
   VIEW = v;
-  ['cal', 'list'].forEach(function (x) {
+  ['cal', 'list', 'rentals'].forEach(function (x) {
     document.getElementById('seg' + x.charAt(0).toUpperCase() + x.slice(1)).className = (v === x) ? 'active' : '';
   });
-  document.getElementById('filterControls').style.display = (v === 'cal') ? 'none' : 'flex';
+  document.getElementById('filterControls').style.display = (v === 'list') ? 'flex' : 'none';
   render();
+}
+function fabClick() {
+  if (VIEW === 'rentals') openAddRental(); else openAdd();
 }
 function toggleWfDone(checked) {
   WF_SHOW_DONE = checked;
@@ -129,6 +148,10 @@ function render() {
     } else {
       main.innerHTML = renderCalendar(DATA.tasks);
     }
+    return;
+  }
+  if (VIEW === 'rentals') {
+    main.innerHTML = renderRentals();
     return;
   }
   main.innerHTML = renderList(filtered());
@@ -353,6 +376,64 @@ function renderList(list) {
   return html;
 }
 
+// ---- rentals view ----
+function setRentalSubview(v) {
+  RENTAL_SUBVIEW = v;
+  render();
+}
+function fmtMoney(n) {
+  n = Number(n);
+  return isNaN(n) ? '' : '$' + n.toLocaleString('en-US');
+}
+function rentalCardHtml(r) {
+  var photo = r.photoUrl
+    ? '<img class="rental-photo" src="' + esc(r.photoUrl) + '" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'rental-photo-fallback\',textContent:\'🏠\'}))">'
+    : '<div class="rental-photo-fallback">🏠</div>';
+  var meta = [];
+  if (r.beds) meta.push('<span class="chip">' + esc(r.beds) + ' bd</span>');
+  if (r.baths) meta.push('<span class="chip">' + esc(r.baths) + ' ba</span>');
+  if (r.sqft) meta.push('<span class="chip">' + esc(Number(r.sqft).toLocaleString('en-US')) + ' sqft</span>');
+  return '<div class="rental-card">' +
+    '<div class="rental-photo-wrap" onclick="openEditRental(\'' + r.id + '\')">' +
+      (r.status === 'New' ? '<div class="rental-badge">🆕 New</div>' : '') +
+      photo +
+    '</div>' +
+    '<div class="rental-body">' +
+      '<div onclick="openEditRental(\'' + r.id + '\')">' +
+        (r.price ? '<div class="rental-price">' + fmtMoney(r.price) + '/mo</div>' : '') +
+        (r.address ? '<div class="rental-address">' + esc(r.address) + '</div>' : '') +
+        '<div class="rental-meta">' + meta.join('') + '</div>' +
+        (r.notes ? '<div class="rental-notes">' + linkify(r.notes) + '</div>' : '') +
+      '</div>' +
+      (r.url ? '<a class="rental-link" href="' + esc(r.url) + '" target="_blank" rel="noopener">View listing ↗</a>' : '') +
+      '<div class="rental-actions">' +
+        '<button class="' + (r.status === 'Viewed' ? 'active-viewed' : '') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'Viewed\')">👀 Viewed</button>' +
+        '<button class="' + (r.status === 'Saved' ? 'active-save' : '') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'' + (r.status === 'Saved' ? 'Viewed' : 'Saved') + '\')">⭐ ' + (r.status === 'Saved' ? 'Saved' : 'Save') + '</button>' +
+        '<button onclick="patchListing(\'' + r.id + '\',\'status\',\'Declined\')">✕ Decline</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+function renderRentals() {
+  var all = RENTAL_DATA.listings.slice().sort(function (a, b) {
+    return (b.dateAdded || '').localeCompare(a.dateAdded || '');
+  });
+  var saved = all.filter(function (r) { return r.status === 'Saved'; });
+  var html = '<div class="cal-subnav"><div class="cal-subnav-center"><div class="seg subseg">' +
+    '<button class="' + (RENTAL_SUBVIEW === 'active' ? 'active' : '') + '" onclick="setRentalSubview(\'active\')">New / Viewed</button>' +
+    '<button class="' + (RENTAL_SUBVIEW === 'saved' ? 'active' : '') + '" onclick="setRentalSubview(\'saved\')">⭐ Saved (' + saved.length + ')</button>' +
+    '</div></div></div>';
+
+  if (RENTAL_SUBVIEW === 'saved') {
+    html += saved.length ? saved.map(rentalCardHtml).join('') : '<div class="empty">No saved listings yet.</div>';
+  } else {
+    var active = all.filter(function (r) { return r.status === 'New' || r.status === 'Viewed'; })
+      .sort(function (a, b) { return (a.status === b.status) ? 0 : (a.status === 'New' ? -1 : 1); });
+    html += active.length ? active.map(rentalCardHtml).join('') : '<div class="empty">No listings yet. Tap + to add one.</div>';
+  }
+  return html;
+}
+
 function byPriority(a, b) {
   var order = { Critical: 0, High: 1, Normal: 2, Low: 3 };
   return (order[a.priority] || 2) - (order[b.priority] || 2);
@@ -375,6 +456,18 @@ function del(id) {
   render(); setBusy(true);
   run('deleteTask', id).then(function (d) { DATA = d; setBusy(false); toast('Deleted'); })
     .catch(function () { setBusy(false); load(); });
+}
+
+// ---- rentals: mutations ----
+function patchListing(id, field, value) {
+  var r = RENTAL_DATA.listings.filter(function (x) { return x.id === id; })[0];
+  if (r) r[field] = value;      // optimistic
+  render();
+  setBusy(true);
+  run('patchListing', id, field, value).then(function (d) {
+    RENTAL_DATA = d; setBusy(false);
+    if (field === 'status') toast(value === 'Declined' ? 'Declined' : value === 'Saved' ? 'Saved ⭐' : 'Marked viewed');
+  }).catch(function () { setBusy(false); toast('Save failed'); load(); });
 }
 
 // ---- modal ----
@@ -422,6 +515,54 @@ function saveModal() {
   closeModal(); setBusy(true);
   var fn = task.id ? 'updateTask' : 'addTask';
   run(fn, task).then(function (d) { DATA = d; setBusy(false); render(); toast('Saved'); })
+    .catch(function () { setBusy(false); toast('Save failed'); load(); });
+}
+
+// ---- rentals: modal ----
+function openAddRental() {
+  document.getElementById('rentalModalTitle').textContent = 'Add listing';
+  document.getElementById('rId').value = '';
+  document.getElementById('rAddress').value = '';
+  document.getElementById('rUrl').value = '';
+  document.getElementById('rPhotoUrl').value = '';
+  document.getElementById('rPrice').value = '';
+  document.getElementById('rSqft').value = '';
+  document.getElementById('rBeds').value = '';
+  document.getElementById('rBaths').value = '';
+  document.getElementById('rNotes').value = '';
+  document.getElementById('rentalModalBg').classList.add('show');
+}
+function openEditRental(id) {
+  var r = RENTAL_DATA.listings.filter(function (x) { return x.id === id; })[0]; if (!r) return;
+  document.getElementById('rentalModalTitle').textContent = 'Edit listing';
+  document.getElementById('rId').value = r.id;
+  document.getElementById('rAddress').value = r.address || '';
+  document.getElementById('rUrl').value = r.url || '';
+  document.getElementById('rPhotoUrl').value = r.photoUrl || '';
+  document.getElementById('rPrice').value = r.price || '';
+  document.getElementById('rSqft').value = r.sqft || '';
+  document.getElementById('rBeds').value = r.beds || '';
+  document.getElementById('rBaths').value = r.baths || '';
+  document.getElementById('rNotes').value = r.notes || '';
+  document.getElementById('rentalModalBg').classList.add('show');
+}
+function closeRentalModal() { document.getElementById('rentalModalBg').classList.remove('show'); }
+function saveRentalModal() {
+  var listing = {
+    id: document.getElementById('rId').value,
+    address: document.getElementById('rAddress').value.trim(),
+    url: document.getElementById('rUrl').value.trim(),
+    photoUrl: document.getElementById('rPhotoUrl').value.trim(),
+    price: document.getElementById('rPrice').value,
+    sqft: document.getElementById('rSqft').value,
+    beds: document.getElementById('rBeds').value,
+    baths: document.getElementById('rBaths').value,
+    notes: document.getElementById('rNotes').value.trim()
+  };
+  if (!listing.address && !listing.url) { toast('Enter an address or URL'); return; }
+  closeRentalModal(); setBusy(true);
+  var fn = listing.id ? 'updateListing' : 'addListing';
+  run(fn, listing).then(function (d) { RENTAL_DATA = d; setBusy(false); render(); toast('Saved'); })
     .catch(function () { setBusy(false); toast('Save failed'); load(); });
 }
 
@@ -504,4 +645,7 @@ document.addEventListener('pointercancel', function () {
 });
 document.getElementById('modalBg').addEventListener('click', function (e) {
   if (e.target === this) closeModal();
+});
+document.getElementById('rentalModalBg').addEventListener('click', function (e) {
+  if (e.target === this) closeRentalModal();
 });

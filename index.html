@@ -224,6 +224,36 @@
     font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase;
     letter-spacing: .3px; margin: 18px 2px 8px;
   }
+
+  /* ---- Rentals view ---- */
+  .rental-card {
+    background: var(--card); border-radius: 12px; overflow: hidden; margin-bottom: 12px;
+    box-shadow: var(--shadow); position: relative;
+  }
+  .rental-photo-wrap { position: relative; width: 100%; height: 170px; background: var(--chip); }
+  .rental-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .rental-photo-fallback {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    font-size: 34px; color: var(--muted); background: var(--chip);
+  }
+  .rental-badge {
+    position: absolute; top: 8px; left: 8px; background: var(--accent2); color: #fff;
+    font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; letter-spacing: .3px;
+  }
+  .rental-body { padding: 11px 12px 12px; }
+  .rental-price { font-size: 19px; font-weight: 800; color: var(--accent); }
+  .rental-address { font-size: 13.5px; color: var(--text); margin-top: 2px; }
+  .rental-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+  .rental-link { display: inline-block; margin-top: 9px; font-size: 12.5px; font-weight: 600; color: var(--accent); text-decoration: none; }
+  .rental-notes { margin-top: 7px; font-size: 12.5px; color: var(--muted); }
+  .rental-actions { display: flex; gap: 8px; margin-top: 11px; }
+  .rental-actions button {
+    flex: 1; border: 0; border-radius: 9px; padding: 9px 4px; font-size: 12.5px; font-weight: 700;
+    cursor: pointer; background: var(--chip); color: var(--text);
+  }
+  .rental-actions button.active-viewed { background: var(--norm); color: #fff; }
+  .rental-actions button.active-save { background: var(--accent); color: #fff; }
+  .rental-actions button.active-decline { background: var(--crit); color: #fff; }
 </style>
 </head>
 <body>
@@ -247,6 +277,7 @@
   <div class="seg">
     <button id="segCal" class="active" onclick="setView('cal')">🗓 Calendar</button>
     <button id="segList" onclick="setView('list')">☑︎ List</button>
+    <button id="segRentals" onclick="setView('rentals')">🏠 Rentals</button>
   </div>
   <div class="filter-controls" id="filterControls">
     <div class="filters">
@@ -259,7 +290,7 @@
 
 <main id="main"><div class="empty">Loading your move plan…</div></main>
 
-<button class="fab" onclick="openAdd()">+</button>
+<button class="fab" onclick="fabClick()">+</button>
 
 <div class="modal-bg" id="modalBg">
   <div class="modal">
@@ -284,6 +315,33 @@
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeModal()">Cancel</button>
       <button class="btn primary" id="mSave" onclick="saveModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="rentalModalBg">
+  <div class="modal">
+    <h3 id="rentalModalTitle">Add listing</h3>
+    <input type="hidden" id="rId">
+    <label>Address / Title</label>
+    <input type="text" id="rAddress" placeholder="123 Aloha St, Kailua">
+    <label>Listing URL</label>
+    <input type="text" id="rUrl" placeholder="https://…">
+    <label>Photo URL</label>
+    <input type="text" id="rPhotoUrl" placeholder="https://… (paste image address)">
+    <div class="two">
+      <div><label>Price / mo</label><input type="number" id="rPrice" placeholder="3500"></div>
+      <div><label>Sq Ft</label><input type="number" id="rSqft" placeholder="1100"></div>
+    </div>
+    <div class="two">
+      <div><label>Beds</label><input type="number" id="rBeds" placeholder="3"></div>
+      <div><label>Baths</label><input type="number" id="rBaths" placeholder="2"></div>
+    </div>
+    <label>Notes</label>
+    <textarea id="rNotes" placeholder="Anything worth remembering…"></textarea>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeRentalModal()">Cancel</button>
+      <button class="btn primary" id="rSave" onclick="saveRentalModal()">Save</button>
     </div>
   </div>
 </div>
