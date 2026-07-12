@@ -387,7 +387,7 @@ function jumpToWeek(isoStr) {
   render();
   setTimeout(function () {
     var el = document.querySelector('.week-strip-item.active');
-    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    if (el) el.scrollIntoView({ block: 'center' });
   }, 30);
 }
 
@@ -432,16 +432,24 @@ function rentalCardHtml(r) {
   if (r.beds) meta.push('<span class="chip">' + esc(r.beds) + ' bd</span>');
   if (r.baths) meta.push('<span class="chip">' + esc(r.baths) + ' ba</span>');
   if (r.sqft) meta.push('<span class="chip">' + esc(Number(r.sqft).toLocaleString('en-US')) + ' sqft</span>');
+  if (r.propertyType) meta.push('<span class="chip">' + esc(r.propertyType) + '</span>');
+  var pets = [];
+  if (r.petCat) pets.push('<span class="pet-icon" title="Cat friendly">🐱</span>');
+  if (r.petDog) pets.push('<span class="pet-icon" title="Dog friendly">🐕</span>');
+  var perks = [];
+  if (r.hasYard) perks.push('<span class="chip perk">🌳 Yard</span>');
+  if (r.hasAC) perks.push('<span class="chip perk">❄️ AC</span>');
   return '<div class="rental-card">' +
     '<div class="rental-photo-wrap" onclick="openEditRental(\'' + r.id + '\')">' +
       (r.status === 'New' ? '<div class="rental-badge">🆕 New</div>' : '') +
+      (pets.length ? '<div class="rental-pets">' + pets.join('') + '</div>' : '') +
       photo +
     '</div>' +
     '<div class="rental-body">' +
       '<div onclick="openEditRental(\'' + r.id + '\')">' +
         (r.price ? '<div class="rental-price">' + fmtMoney(r.price) + '/mo</div>' : '') +
         (r.address ? '<div class="rental-address">' + esc(r.address) + '</div>' : '') +
-        '<div class="rental-meta">' + meta.join('') + '</div>' +
+        '<div class="rental-meta">' + meta.join('') + perks.join('') + '</div>' +
         (r.notes ? '<div class="rental-notes">' + linkify(r.notes) + '</div>' : '') +
       '</div>' +
       (r.url ? '<a class="rental-link" href="' + esc(r.url) + '" target="_blank" rel="noopener">View listing ↗</a>' : '') +
