@@ -72,9 +72,6 @@
     padding: 8px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
   }
   .seg button.active { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
-  .seg.subseg { padding: 2px; background: transparent; border: 1px solid var(--line); }
-  .seg.subseg button { padding: 6px; font-size: 12.5px; }
-  .seg.subseg button.active { background: var(--chip); box-shadow: none; }
   .filter-controls { display: none; flex-direction: column; gap: 8px; } /* default view is Calendar */
   .filters { display: flex; gap: 6px; flex-wrap: wrap; }
   .filters select, .search {
@@ -85,14 +82,6 @@
   .toggle-done { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 
   main { padding: 8px 12px; }
-  .weekhdr {
-    display: flex; align-items: baseline; justify-content: space-between;
-    margin: 16px 2px 8px; padding-bottom: 5px; border-bottom: 2px solid var(--line);
-  }
-  .weekhdr.current { border-color: var(--accent); }
-  .weekhdr h2 { font-size: 14px; margin: 0; font-weight: 700; }
-  .weekhdr .now { color: var(--accent); font-weight: 700; }
-  .weekhdr small { color: var(--muted); font-size: 11.5px; }
 
   .card {
     background: var(--card); border-radius: 12px; padding: 11px 12px; margin-bottom: 9px;
@@ -176,18 +165,18 @@
   .cal-nav button { width: 42px; height: 42px; border: 0; border-radius: 11px; background: var(--chip); color: var(--text); font-size: 22px; cursor: pointer; }
   .cal-title { font-weight: 700; font-size: 16px; }
   .cal-today-btn { font-size: 12px !important; width: auto !important; padding: 0 12px; height: 34px !important; }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; grid-auto-rows: minmax(66px, auto); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; grid-auto-rows: minmax(84px, auto); }
   .cal-dow { margin-bottom: 4px; grid-auto-rows: auto; }
   .dow { text-align: center; font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; }
-  .cal-cell { background: var(--card); border-radius: 9px; padding: 3px 3px 4px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 2px; overflow: hidden; min-height: 66px; }
+  .cal-cell { background: var(--card); border-radius: 9px; padding: 3px 3px 4px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 3px; overflow: hidden; min-height: 84px; }
   .cal-cell.empty-cell { background: transparent; box-shadow: none; }
   .cal-cell.today { outline: 2px solid var(--accent); }
   .cal-cell.drag-over { outline: 2px dashed var(--accent); background: var(--done-bg); }
   .cal-daynum { font-size: 11px; color: var(--muted); font-weight: 700; line-height: 1; padding: 1px 2px; }
   .cal-cell.today .cal-daynum { color: var(--accent); }
-  .cal-chips { display: flex; flex-direction: column; gap: 2px; }
+  .cal-chips { display: flex; flex-direction: column; gap: 3px; }
   .cal-chip {
-    font-size: 9.5px; line-height: 1.3; padding: 2px 4px; border-radius: 4px;
+    font-size: 11.5px; line-height: 1.3; padding: 3px 5px; border-radius: 5px;
     background: var(--chip); color: var(--text); white-space: nowrap; overflow: hidden;
     text-overflow: ellipsis; border-left: 3px solid var(--norm); touch-action: none; cursor: grab; user-select: none;
   }
@@ -204,11 +193,13 @@
   .cal-hint { text-align: center; font-size: 11px; color: var(--muted); margin: 12px 4px 0; }
 
   .week-focus { margin-top: 18px; }
-  .wf-header {
-    display: flex; align-items: baseline; gap: 6px; font-size: 14.5px; font-weight: 700;
-    margin: 0 2px 9px; padding-bottom: 6px; border-bottom: 2px solid var(--accent); color: var(--accent);
+  .wf-header-row {
+    display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px;
+    margin: 0 2px 9px; padding-bottom: 6px; border-bottom: 2px solid var(--accent);
   }
+  .wf-header { display: flex; align-items: baseline; gap: 6px; font-size: 14.5px; font-weight: 700; color: var(--accent); }
   .wf-header small { color: var(--muted); font-weight: 600; font-size: 11.5px; }
+  .wf-toggle { display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
   .wf-empty { text-align: center; color: var(--muted); padding: 18px; font-size: 13px; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); }
 </style>
 </head>
@@ -233,10 +224,6 @@
   <div class="seg">
     <button id="segCal" class="active" onclick="setView('cal')">🗓 Calendar</button>
     <button id="segList" onclick="setView('list')">☑︎ List</button>
-  </div>
-  <div class="seg subseg" id="calSubseg">
-    <button id="subMonth" class="active" onclick="setCalSubview('month')">Month</button>
-    <button id="subWeek" onclick="setCalSubview('week')">Week</button>
   </div>
   <div class="filter-controls" id="filterControls">
     <div class="filters">

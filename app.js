@@ -6,10 +6,10 @@ var API_BASE = 'https://script.google.com/macros/s/AKfycbyEAKsrROuR3KAeiCcD5z3sW
 
 var DATA = { tasks: [], owners: [], statuses: [], priorities: [], categories: [] };
 var VIEW = 'cal';
-var CAL_SUBVIEW = 'month';
 var BUSY = false;
 var pollTimer = null;
 var CAL = { y: 2026, m: 6 }; // calendar month shown (set to today on boot)
+var WF_SHOW_DONE = false; // "This Week's Focus" — show completed tasks toggle
 
 // ---- server bridge (fetch-based JSON API) ----
 function apiGet(action) {
@@ -112,15 +112,11 @@ function setView(v) {
   ['cal', 'list'].forEach(function (x) {
     document.getElementById('seg' + x.charAt(0).toUpperCase() + x.slice(1)).className = (v === x) ? 'active' : '';
   });
-  document.getElementById('calSubseg').style.display = (v === 'cal') ? 'flex' : 'none';
   document.getElementById('filterControls').style.display = (v === 'cal') ? 'none' : 'flex';
   render();
 }
-function setCalSubview(v) {
-  CAL_SUBVIEW = v;
-  ['month', 'week'].forEach(function (x) {
-    document.getElementById('sub' + x.charAt(0).toUpperCase() + x.slice(1)).className = (v === x) ? 'active' : '';
-  });
+function toggleWfDone(checked) {
+  WF_SHOW_DONE = checked;
   render();
 }
 
@@ -129,8 +125,7 @@ function render() {
   var main = document.getElementById('main');
   if (VIEW === 'cal') {
     // Calendar view always shows everything — no filters/search apply here.
-    if (CAL_SUBVIEW === 'month') { main.innerHTML = renderCalendar(DATA.tasks); return; }
-    main.innerHTML = renderWeeks(DATA.tasks);
+    main.innerHTML = renderCalendar(DATA.tasks);
     return;
   }
   var list = filtered();
@@ -205,13 +200,16 @@ function renderWeekFocus(list) {
   var ws = weekStart(today0());
   var we = new Date(ws); we.setDate(we.getDate() + 6);
   var items = list.filter(function (t) {
-    if (t.status === 'Done') return false;
+    if (!WF_SHOW_DONE && t.status === 'Done') return false;
     var d = parseDue(t.due);
     return d && d >= ws && d <= we;
   }).sort(byPriority);
-  var html = '<div class="week-focus"><div class="wf-header">🔥 This Week’s Focus' +
-    '<small>' + fmtShort(ws) + ' – ' + fmtShort(we) + '</small></div>';
-  html += items.length ? items.map(cardHtml).join('') : '<div class="wf-empty">Nothing due this week — nice 🎉</div>';
+  var html = '<div class="week-focus"><div class="wf-header-row">' +
+    '<div class="wf-header">🔥 This Week’s Focus<small>' + fmtShort(ws) + ' – ' + fmtShort(we) + '</small></div>' +
+    '<label class="wf-toggle"><input type="checkbox" id="wfShowDone"' + (WF_SHOW_DONE ? ' checked' : '') +
+      ' onchange="toggleWfDone(this.checked)"> Show completed</label>' +
+    '</div>';
+  html += items.length ? items.map(cardHtml).join('') : '<div class="wf-empty">Nothing due this week' + (WF_SHOW_DONE ? '.' : ' — nice 🎉') + '</div>';
   html += '</div>';
   return html;
 }
@@ -271,43 +269,9 @@ function renderList(list) {
   return sorted.map(cardHtml).join('');
 }
 
-function renderWeeks(list) {
-  var buckets = {}; var noDate = [];
-  list.forEach(function (t) {
-    var d = parseDue(t.due);
-    if (!d) { noDate.push(t); return; }
-    var ws = weekStart(d); var key = ws.getTime();
-    (buckets[key] = buckets[key] || { ws: ws, items: [] }).items.push(t);
-  });
-  var keys = Object.keys(buckets).sort(function (a, b) { return a - b; });
-  var curWs = weekStart(today0()).getTime();
-  var html = '';
-  keys.forEach(function (k) {
-    var b = buckets[k];
-    var we = new Date(b.ws); we.setDate(we.getDate() + 6);
-    var isCur = (+k === curWs);
-    var rel = relLabel(+k, curWs);
-    html += '<div class="weekhdr' + (isCur ? ' current' : '') + '">' +
-      '<h2 class="' + (isCur ? 'now' : '') + '">' + fmtShort(b.ws) + ' – ' + fmtShort(we) + '</h2>' +
-      '<small>' + rel + ' · ' + b.items.length + ' task' + (b.items.length > 1 ? 's' : '') + '</small></div>';
-    html += b.items.sort(byPriority).map(cardHtml).join('');
-  });
-  if (noDate.length) {
-    html += '<div class="weekhdr"><h2>No date yet</h2><small>' + noDate.length + '</small></div>';
-    html += noDate.map(cardHtml).join('');
-  }
-  return html;
-}
 function byPriority(a, b) {
   var order = { Critical: 0, High: 1, Normal: 2, Low: 3 };
   return (order[a.priority] || 2) - (order[b.priority] || 2);
-}
-function relLabel(k, cur) {
-  var diff = Math.round((k - cur) / (7 * 86400000));
-  if (diff < 0) return 'past';
-  if (diff === 0) return 'THIS WEEK';
-  if (diff === 1) return 'next week';
-  return 'in ' + diff + ' weeks';
 }
 
 // ---- mutations ----
