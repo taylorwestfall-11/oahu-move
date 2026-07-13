@@ -446,27 +446,35 @@ function rentalCardHtml(r) {
   if (r.hasAC) meta.push('<span class="chip-sm perk">❄️</span>');
   var pets = '';
   if (r.petCat || r.petDog) {
-    pets = '<div class="rental-pets-overlay">' +
+    pets = '<span class="rental-pets-inline">' +
       (r.petCat ? '<span title="Cat friendly">🐱</span>' : '') +
       (r.petDog ? '<span title="Dog friendly">🐕</span>' : '') +
-    '</div>';
+    '</span>';
   }
-  return '<div class="rental-card">' +
-    '<div class="rental-thumb-wrap" onclick="openEditRental(\'' + r.id + '\')">' +
+  // Clicking the photo or any listing info opens the Zillow link directly —
+  // there's no reason to edit an auto-imported or already-triaged listing,
+  // so the whole block is just an outbound link (real <a> tag) when a url
+  // exists; with no url (e.g. a manual entry with no source link), it's
+  // inert rather than pretending to link somewhere.
+  var innerHtml =
+    '<div class="rental-thumb-wrap">' +
       (r.status === 'New' ? '<div class="rental-badge">🆕 New</div>' : '') +
-      pets +
       photo +
     '</div>' +
-    '<div class="rental-bottom" onclick="openEditRental(\'' + r.id + '\')">' +
+    '<div class="rental-info">' +
       '<div class="rental-price-row">' +
         (r.price ? '<span class="rental-price">' + fmtMoney(r.price) + '/mo</span>' : '') +
+        pets +
       '</div>' +
-      (r.address ? (r.url
-        ? '<a class="rental-address linked" href="' + esc(r.url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + esc(r.address) + '</a>'
-        : '<div class="rental-address">' + esc(r.address) + '</div>') : '') +
+      (r.address ? '<div class="rental-address">' + esc(r.address) + '</div>' : '') +
       '<div class="rental-meta">' + meta.join('') + '</div>' +
       (r.notes ? '<div class="rental-notes">' + esc(r.notes) + '</div>' : '') +
-    '</div>' +
+    '</div>';
+  var linkWrap = r.url
+    ? '<a class="rental-link-wrap" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + innerHtml + '</a>'
+    : '<div class="rental-link-wrap">' + innerHtml + '</div>';
+  return '<div class="rental-card">' +
+    linkWrap +
     '<div class="rental-actions">' +
       '<button class="' + (r.status === 'Viewed' ? 'active-viewed' : '') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'Viewed\')">👀 Viewed</button>' +
       '<button class="' + (r.status === 'Saved' ? 'active-save' : '') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'' + (r.status === 'Saved' ? 'Viewed' : 'Saved') + '\')">⭐ ' + (r.status === 'Saved' ? 'Saved' : 'Save') + '</button>' +
@@ -598,20 +606,6 @@ function openAddRental() {
   document.getElementById('rBeds').value = '';
   document.getElementById('rBaths').value = '';
   document.getElementById('rNotes').value = '';
-  document.getElementById('rentalModalBg').classList.add('show');
-}
-function openEditRental(id) {
-  var r = RENTAL_DATA.listings.filter(function (x) { return x.id === id; })[0]; if (!r) return;
-  document.getElementById('rentalModalTitle').textContent = 'Edit listing';
-  document.getElementById('rId').value = r.id;
-  document.getElementById('rAddress').value = r.address || '';
-  document.getElementById('rUrl').value = r.url || '';
-  document.getElementById('rPhotoUrl').value = r.photoUrl || '';
-  document.getElementById('rPrice').value = r.price || '';
-  document.getElementById('rSqft').value = r.sqft || '';
-  document.getElementById('rBeds').value = r.beds || '';
-  document.getElementById('rBaths').value = r.baths || '';
-  document.getElementById('rNotes').value = r.notes || '';
   document.getElementById('rentalModalBg').classList.add('show');
 }
 function closeRentalModal() { document.getElementById('rentalModalBg').classList.remove('show'); }

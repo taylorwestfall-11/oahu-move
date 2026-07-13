@@ -278,50 +278,45 @@
     letter-spacing: .3px; margin: 18px 2px 8px;
   }
 
-  /* ---- Rentals view: big photo on top, condensed info+actions together at bottom ---- */
+  /* ---- Rentals view: row layout (thumb | info | actions), whole card links out to Zillow ---- */
   .rental-card {
-    background: var(--card); border-radius: 12px; overflow: hidden;
-    margin-bottom: 10px; box-shadow: var(--shadow);
+    display: flex; align-items: stretch; gap: 10px; background: var(--card); border-radius: 12px;
+    padding: 8px; margin-bottom: 9px; box-shadow: var(--shadow);
+  }
+  .rental-link-wrap {
+    flex: 1; min-width: 0; display: flex; gap: 10px; text-decoration: none; color: inherit;
+    cursor: pointer;
   }
   .rental-thumb-wrap {
-    position: relative; width: 100%; height: 190px; background: var(--chip); cursor: pointer;
+    position: relative; flex: none; width: 90px; height: 90px; border-radius: 10px;
+    overflow: hidden; background: var(--chip);
   }
   .rental-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
   .rental-thumb-fallback {
     width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-    font-size: 40px; color: var(--muted); background: var(--chip);
+    font-size: 30px; color: var(--muted); background: var(--chip);
   }
   .rental-badge {
-    position: absolute; top: 8px; left: 8px; background: var(--accent2); color: #fff;
-    font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 9px; letter-spacing: .2px;
+    position: absolute; top: 3px; left: 3px; background: var(--accent2); color: #fff;
+    font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 8px; letter-spacing: .2px;
   }
-  .rental-pets-overlay {
-    position: absolute; top: 8px; right: 8px; display: flex; gap: 3px; font-size: 15px;
-  }
-  .rental-pets-overlay span {
-    background: rgba(255,255,255,.92); border-radius: 50%; width: 24px; height: 24px;
-    display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow);
-  }
-  .rental-bottom { padding: 8px 10px 9px; cursor: pointer; }
+  .rental-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
   .rental-price-row { display: flex; align-items: baseline; gap: 6px; }
-  .rental-price { font-size: 16.5px; font-weight: 800; color: var(--accent); }
-  .rental-address {
-    display: block; font-size: 12.5px; color: var(--text); margin-top: 1px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none;
-  }
-  .rental-address.linked { color: var(--accent); text-decoration: underline; }
-  .rental-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .rental-price { font-size: 17px; font-weight: 800; color: var(--accent); }
+  .rental-pets-inline { display: flex; gap: 2px; font-size: 13px; }
+  .rental-address { font-size: 12.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rental-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
   .chip-sm {
     font-size: 10.5px; padding: 2px 7px; border-radius: 20px; background: var(--chip);
     color: var(--muted); white-space: nowrap;
   }
   .chip-sm.perk { background: var(--done-bg); color: var(--accent); font-weight: 600; }
-  .rental-notes { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
-  .rental-actions { display: flex; gap: 6px; padding: 0 10px 10px; }
+  .rental-notes { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .rental-actions { flex: none; width: 84px; display: flex; flex-direction: column; gap: 5px; justify-content: center; }
   .rental-actions button {
-    flex: 1; border: 0; border-radius: 8px; padding: 7px 3px; font-size: 11px; font-weight: 700;
+    width: 100%; border: 0; border-radius: 9px; padding: 8px 4px; font-size: 11.5px; font-weight: 700;
     cursor: pointer; background: var(--chip); color: var(--text);
-    display: flex; align-items: center; justify-content: center; gap: 3px; white-space: nowrap;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
   }
   .rental-actions button.active-viewed { background: var(--norm); color: #fff; }
   .rental-actions button.active-save { background: var(--accent); color: #fff; }
