@@ -316,6 +316,10 @@ function updateHeader() {
   var moveTask = DATA.tasks.filter(function (t) { return t.id === 'Z1'; })[0];
   document.getElementById('cdList').textContent = countdown(listTask && listTask.due);
   document.getElementById('cdMove').textContent = countdown(moveTask && moveTask.due);
+  var newCount = RENTAL_DATA.listings.filter(function (r) { return r.status === 'New'; }).length;
+  var badge = document.getElementById('rentalsNewBadge');
+  badge.textContent = newCount;
+  badge.style.display = newCount ? 'inline-flex' : 'none';
 }
 function countdown(due) {
   var d = parseDue(due); if (!d) return '–';

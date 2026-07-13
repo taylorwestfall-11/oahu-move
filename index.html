@@ -73,6 +73,11 @@
     padding: 8px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
   }
   .seg button.active { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
+  .seg-badge {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px;
+    padding: 0 4px; margin-left: 4px; border-radius: 9px; background: var(--accent2); color: #fff;
+    font-size: 10px; font-weight: 700; vertical-align: middle;
+  }
   .filter-controls { display: none; flex-direction: column; gap: 8px; } /* default view is Calendar */
   .filters { display: flex; gap: 6px; }
   .filters select, .search {
@@ -344,7 +349,7 @@
   <div class="seg">
     <button id="segCal" class="active" onclick="setView('cal')">🗓 Calendar</button>
     <button id="segList" onclick="setView('list')">☑︎ List</button>
-    <button id="segRentals" onclick="setView('rentals')">🏠 Rentals</button>
+    <button id="segRentals" onclick="setView('rentals')">🏠 Rentals<span class="seg-badge" id="rentalsNewBadge" style="display:none"></span></button>
   </div>
   <div class="filter-controls" id="filterControls">
     <div class="filters">
