@@ -9,6 +9,8 @@ var DATA = { tasks: [], owners: [], statuses: [], priorities: [], categories: []
 var RENTAL_DATA = { listings: [], statuses: [] };
 var VIEW = 'cal';
 var RENTAL_SUBVIEW = 'active'; // Rentals tab: 'active' (New/Viewed) or 'saved'
+var RENTAL_SAVED_SORT = 'recent'; // Saved sub-tab: 'recent' or 'mostSaved'
+var WHO_AM_I = localStorage.getItem('whoAmI') || ''; // 'Taylor' or 'Anica' — per-device, asked once
 var BUSY = false;
 var lastMutationAt = 0; // Date.now() of the last local edit/save started — see poll()
 var pollTimer = null;
@@ -44,6 +46,7 @@ function run(fn) {
   if (fn === 'updateListing') return apiPost('updateListing', { listing: args[0] });
   if (fn === 'patchListing') return apiPost('patchListing', { id: args[0], field: args[1], value: args[2] });
   if (fn === 'deleteListing') return apiPost('deleteListing', { id: args[0] });
+  if (fn === 'toggleRentalSave') return apiPost('toggleRentalSave', { id: args[0], who: args[1] });
   return Promise.reject(new Error('Unknown run() fn: ' + fn));
 }
 
@@ -469,9 +472,13 @@ function rentalCardHtml(r) {
   // so the whole block is just an outbound link (real <a> tag) when a url
   // exists; with no url (e.g. a manual entry with no source link), it's
   // inert rather than pretending to link somewhere.
+  var savers = savedByList(r);
+  var bothSaved = savers.indexOf('Taylor') > -1 && savers.indexOf('Anica') > -1;
+  var iSaved = WHO_AM_I && savers.indexOf(WHO_AM_I) > -1;
   var innerHtml =
     '<div class="rental-thumb-wrap">' +
       (r.status === 'New' ? '<div class="rental-badge">🆕 New</div>' : '') +
+      (bothSaved ? '<div class="rental-badge-both" title="Both of you saved this">👫 Both</div>' : '') +
       photo +
     '</div>' +
     '<div class="rental-info">' +
@@ -490,10 +497,14 @@ function rentalCardHtml(r) {
     linkWrap +
     '<div class="rental-actions">' +
       '<button class="' + (r.status === 'Viewed' ? 'active-viewed' : '') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'Viewed\')">👀 Viewed</button>' +
-      '<button class="' + (r.status === 'Saved' ? 'active-save' : '') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'' + (r.status === 'Saved' ? 'Viewed' : 'Saved') + '\')">⭐ ' + (r.status === 'Saved' ? 'Saved' : 'Save') + '</button>' +
+      '<button class="' + (iSaved ? 'active-save' : '') + '" onclick="toggleRentalSave(\'' + r.id + '\')">⭐ ' + (iSaved ? 'Saved' : 'Save') + '</button>' +
       '<button onclick="patchListing(\'' + r.id + '\',\'status\',\'Declined\')">✕ Decline</button>' +
     '</div>' +
   '</div>';
+}
+function setRentalSavedSort(v) {
+  RENTAL_SAVED_SORT = v;
+  render();
 }
 function renderRentals() {
   var all = RENTAL_DATA.listings.slice().sort(function (a, b) {
@@ -507,6 +518,13 @@ function renderRentals() {
     '</div></div></div>';
 
   if (RENTAL_SUBVIEW === 'saved') {
+    if (RENTAL_SAVED_SORT === 'mostSaved') {
+      saved.sort(function (a, b) { return savedByList(b).length - savedByList(a).length; });
+    }
+    html += '<div class="rental-sort-row">' +
+      '<button class="' + (RENTAL_SAVED_SORT === 'recent' ? 'active' : '') + '" onclick="setRentalSavedSort(\'recent\')">Recent</button>' +
+      '<button class="' + (RENTAL_SAVED_SORT === 'mostSaved' ? 'active' : '') + '" onclick="setRentalSavedSort(\'mostSaved\')">👫 Most saved</button>' +
+    '</div>';
     html += saved.length ? saved.map(rentalCardHtml).join('') : '<div class="empty">No saved listings yet.</div>';
   } else {
     var active = all.filter(function (r) { return r.status === 'New' || r.status === 'Viewed'; })
@@ -553,6 +571,55 @@ function patchListing(id, field, value) {
     RENTAL_DATA = d; setBusy(false); render();
     if (field === 'status') toast(value === 'Declined' ? 'Declined' : value === 'Saved' ? 'Saved ⭐' : 'Marked viewed');
   }).catch(function () { setBusy(false); toast('Save failed'); load(); });
+}
+function savedByList(r) {
+  return r.savedBy ? r.savedBy.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
+}
+function toggleRentalSave(id) {
+  if (!WHO_AM_I) { promptWhoAmI(function () { toggleRentalSave(id); }); return; }
+  lastMutationAt = Date.now();
+  var r = RENTAL_DATA.listings.filter(function (x) { return x.id === id; })[0];
+  if (r) {
+    var savers = savedByList(r);
+    var idx = savers.indexOf(WHO_AM_I);
+    if (idx > -1) { savers.splice(idx, 1); } else { savers.push(WHO_AM_I); }
+    r.savedBy = savers.join(',');       // optimistic
+    r.status = savers.length ? 'Saved' : 'Viewed';
+  }
+  render();
+  setBusy(true);
+  run('toggleRentalSave', id, WHO_AM_I).then(function (d) {
+    RENTAL_DATA = d; setBusy(false); render();
+    var updated = d.listings.filter(function (x) { return x.id === id; })[0];
+    toast(updated && savedByList(updated).indexOf(WHO_AM_I) > -1 ? 'Saved ⭐' : 'Unsaved');
+  }).catch(function () { setBusy(false); toast('Save failed'); load(); });
+}
+
+// One-time per-device identity prompt so a Save can be attributed to
+// Taylor or Anica specifically (no login system — just a local choice
+// remembered on this phone). Built inline rather than added to index.html
+// since it's only ever needed once per device.
+function promptWhoAmI(onDone) {
+  var bg = document.createElement('div');
+  bg.className = 'modal-bg show';
+  bg.innerHTML =
+    '<div class="modal">' +
+      '<h3>Who\'s this?</h3>' +
+      '<p style="color:var(--muted);font-size:13px;margin:0 0 14px;">So we can tell whose saves are whose — only asked once per device.</p>' +
+      '<div class="modal-actions">' +
+        '<button class="btn primary" id="whoTaylor">Taylor</button>' +
+        '<button class="btn primary" id="whoAnica">Anica</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(bg);
+  function pick(name) {
+    WHO_AM_I = name;
+    localStorage.setItem('whoAmI', name);
+    document.body.removeChild(bg);
+    if (onDone) onDone();
+  }
+  bg.querySelector('#whoTaylor').onclick = function () { pick('Taylor'); };
+  bg.querySelector('#whoAnica').onclick = function () { pick('Anica'); };
 }
 
 // ---- modal ----

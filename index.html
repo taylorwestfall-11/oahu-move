@@ -78,6 +78,12 @@
     padding: 0 4px; margin-left: 4px; border-radius: 9px; background: var(--accent2); color: #fff;
     font-size: 10px; font-weight: 700; vertical-align: middle;
   }
+  .rental-sort-row { display: flex; gap: 6px; margin: 0 2px 9px; }
+  .rental-sort-row button {
+    border: 0; background: var(--chip); color: var(--muted); padding: 6px 12px;
+    border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .rental-sort-row button.active { background: var(--accent); color: #fff; }
   .filter-controls { display: none; flex-direction: column; gap: 8px; } /* default view is Calendar */
   .filters { display: flex; gap: 6px; }
   .filters select, .search {
@@ -304,6 +310,11 @@
   .rental-badge {
     position: absolute; top: 3px; left: 3px; background: var(--accent2); color: #fff;
     font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 8px; letter-spacing: .2px;
+  }
+  .rental-badge-both {
+    position: absolute; bottom: 3px; left: 3px; right: 3px; background: rgba(74,44,130,.88); color: #fff;
+    font-size: 8.5px; font-weight: 700; padding: 2px 4px; border-radius: 6px; letter-spacing: .2px;
+    text-align: center;
   }
   .rental-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
   .rental-price-row { display: flex; align-items: baseline; gap: 6px; }
