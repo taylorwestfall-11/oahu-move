@@ -491,8 +491,9 @@ function renderRentals() {
     return (b.dateAdded || '').localeCompare(a.dateAdded || '');
   });
   var saved = all.filter(function (r) { return r.status === 'Saved'; });
+  var newCount = all.filter(function (r) { return r.status === 'New'; }).length;
   var html = '<div class="cal-subnav"><div class="cal-subnav-center"><div class="seg subseg">' +
-    '<button class="' + (RENTAL_SUBVIEW === 'active' ? 'active' : '') + '" onclick="setRentalSubview(\'active\')">New / Viewed</button>' +
+    '<button class="' + (RENTAL_SUBVIEW === 'active' ? 'active' : '') + '" onclick="setRentalSubview(\'active\')">New / Viewed' + (newCount ? ' <span class="seg-badge">' + newCount + '</span>' : '') + '</button>' +
     '<button class="' + (RENTAL_SUBVIEW === 'saved' ? 'active' : '') + '" onclick="setRentalSubview(\'saved\')">⭐ Saved (' + saved.length + ')</button>' +
     '</div></div></div>';
 
