@@ -10,6 +10,7 @@ var RENTAL_DATA = { listings: [], statuses: [] };
 var VIEW = 'cal';
 var RENTAL_SUBVIEW = 'active'; // Rentals tab: 'active' (New/Viewed) or 'saved'
 var BUSY = false;
+var lastMutationAt = 0; // Date.now() of the last local edit/save started — see poll()
 var pollTimer = null;
 var CAL = { y: 2026, m: 6 }; // calendar month shown (set to today on boot)
 var CAL_SUBVIEW = 'month'; // Calendar tab: 'month' grid or 'week' list
@@ -71,7 +72,15 @@ function load() {
 function poll() {
   if (BUSY || document.getElementById('modalBg').classList.contains('show') ||
       document.getElementById('rentalModalBg').classList.contains('show')) return;
+  var pollStartedAt = Date.now();
   Promise.all([run('getData'), run('getRentals')]).then(function (r) {
+    // Discard this response if a local edit/save started at any point after
+    // this poll's request went out — that edit's own result supersedes
+    // whatever this poll fetched, no matter which one resolves first. Without
+    // this, tapping Save right after a backgrounded tab regains focus (which
+    // can fire a poll already in flight) could have the poll's stale data
+    // silently overwrite the save a moment later.
+    if (BUSY || lastMutationAt > pollStartedAt) return;
     var changed = false;
     var rentals = safeRentals_(r[1]);
     if (JSON.stringify(r[0].tasks) !== JSON.stringify(DATA.tasks)) { DATA = r[0]; changed = true; }
@@ -514,31 +523,34 @@ function byPriority(a, b) {
 
 // ---- mutations ----
 function patch(id, field, value) {
+  lastMutationAt = Date.now();
   var t = DATA.tasks.filter(function (x) { return x.id === id; })[0];
   if (t) t[field] = value;      // optimistic
   render();
   setBusy(true);
   run('patchTask', id, field, value).then(function (d) {
-    DATA = d; setBusy(false);
+    DATA = d; setBusy(false); render();
     if (field === 'status') toast(value === 'Done' ? 'Nice — checked off ✓' : 'Updated');
   }).catch(function () { setBusy(false); toast('Save failed'); load(); });
 }
 function del(id) {
   if (!confirm('Delete this task?')) return;
+  lastMutationAt = Date.now();
   DATA.tasks = DATA.tasks.filter(function (x) { return x.id !== id; });
   render(); setBusy(true);
-  run('deleteTask', id).then(function (d) { DATA = d; setBusy(false); toast('Deleted'); })
+  run('deleteTask', id).then(function (d) { DATA = d; setBusy(false); render(); toast('Deleted'); })
     .catch(function () { setBusy(false); load(); });
 }
 
 // ---- rentals: mutations ----
 function patchListing(id, field, value) {
+  lastMutationAt = Date.now();
   var r = RENTAL_DATA.listings.filter(function (x) { return x.id === id; })[0];
   if (r) r[field] = value;      // optimistic
   render();
   setBusy(true);
   run('patchListing', id, field, value).then(function (d) {
-    RENTAL_DATA = d; setBusy(false);
+    RENTAL_DATA = d; setBusy(false); render();
     if (field === 'status') toast(value === 'Declined' ? 'Declined' : value === 'Saved' ? 'Saved ⭐' : 'Marked viewed');
   }).catch(function () { setBusy(false); toast('Save failed'); load(); });
 }
@@ -593,6 +605,7 @@ function saveModal() {
     notes: document.getElementById('mNotes').value.trim()
   };
   if (!task.task) { toast('Enter a task'); return; }
+  lastMutationAt = Date.now();
   closeModal(); setBusy(true);
   var fn = task.id ? 'updateTask' : 'addTask';
   run(fn, task).then(function (d) { DATA = d; setBusy(false); render(); toast('Saved'); })
@@ -627,6 +640,7 @@ function saveRentalModal() {
     notes: document.getElementById('rNotes').value.trim()
   };
   if (!listing.address && !listing.url) { toast('Enter an address or URL'); return; }
+  lastMutationAt = Date.now();
   closeRentalModal(); setBusy(true);
   var fn = listing.id ? 'updateListing' : 'addListing';
   run(fn, listing).then(function (d) { RENTAL_DATA = d; setBusy(false); render(); toast('Saved'); })
