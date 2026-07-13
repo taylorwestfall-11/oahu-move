@@ -446,20 +446,20 @@ function rentalCardHtml(r) {
   if (r.hasAC) meta.push('<span class="chip-sm perk">❄️</span>');
   var pets = '';
   if (r.petCat || r.petDog) {
-    pets = '<span class="rental-pets-inline">' +
+    pets = '<div class="rental-pets-overlay">' +
       (r.petCat ? '<span title="Cat friendly">🐱</span>' : '') +
       (r.petDog ? '<span title="Dog friendly">🐕</span>' : '') +
-    '</span>';
+    '</div>';
   }
   return '<div class="rental-card">' +
     '<div class="rental-thumb-wrap" onclick="openEditRental(\'' + r.id + '\')">' +
-      (r.status === 'New' ? '<div class="rental-badge">NEW</div>' : '') +
+      (r.status === 'New' ? '<div class="rental-badge">🆕 New</div>' : '') +
+      pets +
       photo +
     '</div>' +
-    '<div class="rental-info" onclick="openEditRental(\'' + r.id + '\')">' +
+    '<div class="rental-bottom" onclick="openEditRental(\'' + r.id + '\')">' +
       '<div class="rental-price-row">' +
         (r.price ? '<span class="rental-price">' + fmtMoney(r.price) + '/mo</span>' : '') +
-        pets +
       '</div>' +
       (r.address ? (r.url
         ? '<a class="rental-address linked" href="' + esc(r.url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + esc(r.address) + '</a>'
@@ -468,9 +468,9 @@ function rentalCardHtml(r) {
       (r.notes ? '<div class="rental-notes">' + esc(r.notes) + '</div>' : '') +
     '</div>' +
     '<div class="rental-actions">' +
-      '<button class="' + (r.status === 'Viewed' ? 'active-viewed' : '') + '" title="Viewed" onclick="patchListing(\'' + r.id + '\',\'status\',\'Viewed\')">👀</button>' +
-      '<button class="' + (r.status === 'Saved' ? 'active-save' : '') + '" title="' + (r.status === 'Saved' ? 'Saved' : 'Save') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'' + (r.status === 'Saved' ? 'Viewed' : 'Saved') + '\')">⭐</button>' +
-      '<button title="Decline" onclick="patchListing(\'' + r.id + '\',\'status\',\'Declined\')">✕</button>' +
+      '<button class="' + (r.status === 'Viewed' ? 'active-viewed' : '') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'Viewed\')">👀 Viewed</button>' +
+      '<button class="' + (r.status === 'Saved' ? 'active-save' : '') + '" onclick="patchListing(\'' + r.id + '\',\'status\',\'' + (r.status === 'Saved' ? 'Viewed' : 'Saved') + '\')">⭐ ' + (r.status === 'Saved' ? 'Saved' : 'Save') + '</button>' +
+      '<button onclick="patchListing(\'' + r.id + '\',\'status\',\'Declined\')">✕ Decline</button>' +
     '</div>' +
   '</div>';
 }
