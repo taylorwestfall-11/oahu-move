@@ -4,6 +4,13 @@
 // ⚠️ SET THIS to your Apps Script Web App URL after deploying (ends in /exec).
 var API_BASE = 'https://script.google.com/macros/s/AKfycbyEAKsrROuR3KAeiCcD5z3sWlB7wrm89UTS_F05wtsdUAj_r3JgzIwDph-tKbrwTBLQ/exec';
 
+// Twice-daily auto-import is paused (RentCast's free tier has a low call
+// cap with overage charges past it — off while we're just exploring
+// data/cost, not actively needing new postings). Flip to true and
+// re-enable the schedule in .github/workflows/fetch-rentals.yml to resume.
+// Manual add/edit/Save/Decline all still work either way.
+var RENTALS_AUTO_IMPORT_ENABLED = false;
+
 
 var DATA = { tasks: [], owners: [], statuses: [], priorities: [], categories: [] };
 var RENTAL_DATA = { listings: [], statuses: [] };
@@ -516,6 +523,9 @@ function renderRentals() {
     '<button class="' + (RENTAL_SUBVIEW === 'active' ? 'active' : '') + '" onclick="setRentalSubview(\'active\')">New / Viewed' + (newCount ? ' <span class="seg-badge">' + newCount + '</span>' : '') + '</button>' +
     '<button class="' + (RENTAL_SUBVIEW === 'saved' ? 'active' : '') + '" onclick="setRentalSubview(\'saved\')">⭐ Saved (' + saved.length + ')</button>' +
     '</div></div></div>';
+  if (!RENTALS_AUTO_IMPORT_ENABLED) {
+    html += '<div class="rentals-paused-banner">⏸️ <span><b>Auto-import is paused</b> — RentCast\'s free tier has a low call limit with overage charges, so this is off while we\'re just exploring. Adding, saving, and declining listings still works as normal.</span></div>';
+  }
 
   if (RENTAL_SUBVIEW === 'saved') {
     if (RENTAL_SAVED_SORT === 'mostSaved') {

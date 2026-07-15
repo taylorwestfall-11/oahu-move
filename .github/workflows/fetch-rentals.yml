@@ -1,11 +1,15 @@
 name: Fetch Oahu rental listings
 
 on:
-  schedule:
-    # Twice daily, ~8am and ~6pm HST. Hawaii has no DST, so HST is always
-    # UTC-10 — that's 18:00 and 04:00 UTC.
-    - cron: '0 18 * * *'
-    - cron: '0 4 * * *'
+  # Twice-daily schedule is DISABLED for now (RentCast's free tier has a
+  # low monthly call cap and overage charges past it — paused while we're
+  # just exploring available data/cost rather than actively needing new
+  # postings). Re-enable by uncommenting the schedule block below.
+  # schedule:
+  #   # Twice daily, ~8am and ~6pm HST. Hawaii has no DST, so HST is always
+  #   # UTC-10 — that's 18:00 and 04:00 UTC.
+  #   - cron: '0 18 * * *'
+  #   - cron: '0 4 * * *'
   workflow_dispatch: {}
 
 jobs:

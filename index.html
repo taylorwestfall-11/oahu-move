@@ -78,6 +78,12 @@
     padding: 0 4px; margin-left: 4px; border-radius: 9px; background: var(--accent2); color: #fff;
     font-size: 10px; font-weight: 700; vertical-align: middle;
   }
+  .paused-badge { font-size: 10px; margin-left: 3px; vertical-align: middle; opacity: .85; }
+  .rentals-paused-banner {
+    display: flex; align-items: center; gap: 8px; background: var(--chip); color: var(--muted);
+    font-size: 12px; padding: 9px 11px; border-radius: 10px; margin: 0 2px 10px;
+  }
+  .rentals-paused-banner b { color: var(--text); }
   .rental-sort-row { display: flex; gap: 6px; margin: 0 2px 9px; }
   .rental-sort-row button {
     border: 0; background: var(--chip); color: var(--muted); padding: 6px 12px;
@@ -360,7 +366,7 @@
   <div class="seg">
     <button id="segCal" class="active" onclick="setView('cal')">🗓 Calendar</button>
     <button id="segList" onclick="setView('list')">☑︎ List</button>
-    <button id="segRentals" onclick="setView('rentals')">🏠 Rentals<span class="seg-badge" id="rentalsNewBadge" style="display:none"></span></button>
+    <button id="segRentals" onclick="setView('rentals')">🏠 Rentals<span class="paused-badge" title="Auto-import paused">⏸️</span><span class="seg-badge" id="rentalsNewBadge" style="display:none"></span></button>
   </div>
   <div class="filter-controls" id="filterControls">
     <div class="filters">
