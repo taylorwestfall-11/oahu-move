@@ -1,0 +1,11 @@
+{
+  "status": "active",
+  "type": "web-app",
+  "summary": "Shared schedule + to-do list for the move to Oahu (PWA).",
+  "about": "Shared move-planning PWA � schedule and to-dos for the Oahu move, with a rental scraper (RentCast auto-import currently paused).",
+  "review": "RentCast import paused",
+  "name": "oahu-move",
+  "created": "2026-07-22T21:40:20.730Z",
+  "updated": "2026-07-22T21:50:48.916Z",
+  "thumbnail": "thumbnail.png"
+}
